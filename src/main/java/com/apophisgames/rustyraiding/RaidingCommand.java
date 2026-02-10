@@ -120,7 +120,7 @@ public class RaidingCommand extends CommandBase {
 
     /**
      * /raiding create <name>
-     * Creates a new raiding from current selection. Fails if zone already exists.
+     * Creates a new raiding zone from current selection. Fails if zone already exists.
      */
     public static class CreateSubCommand extends AbstractPlayerCommand {
         private final RustyRaidingPlugin plugin;

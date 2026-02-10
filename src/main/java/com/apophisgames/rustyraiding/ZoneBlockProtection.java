@@ -6,24 +6,37 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.component.SystemGroup;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockGathering;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 /**
  * consolidated systems for Zone block protections.
  */
 public class ZoneBlockProtection {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    private static final List<String> BYPASS_GATHER_TYPES = List.of("Soils");
 
     private static final Query<EntityStore> QUERY = Query.and(
         Player.getComponentType(),
@@ -57,6 +70,29 @@ public class ZoneBlockProtection {
             
             ZoneService service = zoneService.get();
             if (service == null) return;
+
+            // Raiders are allowed to bypass protections for certain types of blocks, like soils
+            ItemStack itemInHand = event.getItemInHand();
+            if (itemInHand != null) {
+                String blockKey = itemInHand.getBlockKey();
+                if (blockKey != null){
+                    BlockType blockAsset = BlockType.getAssetMap().getAsset(blockKey);
+                    if (blockAsset != null){
+                        BlockGathering gathering = blockAsset.getGathering();
+                        if (gathering != null){
+                            BlockBreakingDropType breakingDropType = gathering.getBreaking();
+                            if (breakingDropType != null){
+                                String gatherType = breakingDropType.getGatherType();
+                                if(gatherType != null && !gatherType.trim().isEmpty()){
+                                    LOGGER.at(Level.WARNING).log("Found Gathering Type: "+gatherType);
+                                    if (BYPASS_GATHER_TYPES.contains(gatherType))
+                                        return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             Player player = chunk.getComponent(index, Player.getComponentType());
             if (player == null) return;
@@ -105,6 +141,19 @@ public class ZoneBlockProtection {
             
             ZoneService service = zoneService.get();
             if (service == null) return;
+
+            // Raiders are allowed to bypass protections for certain types of blocks, like soils
+            BlockGathering gathering = event.getBlockType().getGathering();
+            if (gathering != null){
+                BlockBreakingDropType breakingDropType = gathering.getBreaking();
+                if (breakingDropType != null){
+                    String gatherType = breakingDropType.getGatherType();
+                    if(gatherType != null && !gatherType.trim().isEmpty()){
+                        if (BYPASS_GATHER_TYPES.contains(gatherType))
+                            return;
+                    }
+                }
+            }
 
             Player player = chunk.getComponent(index, Player.getComponentType());
             if (player == null) return;
