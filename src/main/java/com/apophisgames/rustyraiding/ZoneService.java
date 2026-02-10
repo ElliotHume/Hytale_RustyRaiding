@@ -143,8 +143,7 @@ public class ZoneService {
     }
 
     public UpdateResult updateZone(String worldName, String zoneName, 
-                                   @Nullable Vector3d newMin, @Nullable Vector3d newMax,
-                                   @Nullable Map<ProtectionFlag, Boolean> newPermissions) {
+                                   @Nullable Vector3d newMin, @Nullable Vector3d newMax) {
         
         Zone existing = getZoneByName(worldName, zoneName);
         if (existing == null) {
@@ -154,11 +153,6 @@ public class ZoneService {
         Zone updated = existing;
         if (newMin != null && newMax != null) {
             updated = updated.withBounds(newMin, newMax);
-        }
-        if (newPermissions != null) {
-            for (Map.Entry<ProtectionFlag, Boolean> entry : newPermissions.entrySet()) {
-                updated = updated.withPermission(entry.getKey(), entry.getValue());
-            }
         }
 
         try {

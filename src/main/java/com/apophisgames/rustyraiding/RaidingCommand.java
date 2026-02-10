@@ -56,8 +56,7 @@ public class RaidingCommand extends CommandBase {
         this.addSubCommand(new DeleteSubCommand(plugin));
         this.addSubCommand(new ListSubCommand(plugin));
         this.addSubCommand(new ShowSubCommand(plugin));
-        this.addSubCommand(new FlagSubCommand(plugin));
-        
+
         this.requirePermission("easy-safezone.admin");
     }
 
@@ -116,7 +115,7 @@ public class RaidingCommand extends CommandBase {
     // ============================================
 
     /**
-     * /safezone create <name> [--pvp-enabled]
+     * /safezone create <name>
      * Creates a new safezone from current selection. Fails if zone already exists.
      * PVP is disabled by default (safe zone).
      */
@@ -165,7 +164,7 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /safezone update <name> [--pvp-enabled]
+     * /safezone update <name>
      * Updates an existing zone. Selection is optional if a flag is provided.
      */
     public static class UpdateSubCommand extends AbstractPlayerCommand {
@@ -197,7 +196,7 @@ public class RaidingCommand extends CommandBase {
             Vector3d newMax = bounds.max();
 
             ZoneService.UpdateResult result = plugin.getZoneService().updateZone(
-                world.getName(), zoneName, newMin, newMax, null);
+                world.getName(), zoneName, newMin, newMax);
 
             switch (result) {
                 case SUCCESS -> {
@@ -334,7 +333,6 @@ public class RaidingCommand extends CommandBase {
             } else {
                 for (Zone zone : zones) {
                     playerRef.sendMessage(MessageBuilder.create("  - " + zone.zoneName()).color(ColorPalette.WHITE)
-                        .append(" [PVP: " + (zone.isAllowed(ProtectionFlag.PVP) ? "enabled" : "disabled") + "]", ColorPalette.MUTED)
                         .append(" " + formatCenter(zone), ColorPalette.MUTED)
                         .build());
                 }
@@ -447,10 +445,7 @@ public class RaidingCommand extends CommandBase {
             double sizeY = zone.max().y - zone.min().y;
             double sizeZ = zone.max().z - zone.min().z;
 
-            // Color: Green for safe (PVP disabled), Red for PVP enabled
-            Vector3f color = zone.isAllowed(ProtectionFlag.PVP) 
-                ? new Vector3f(1.0f, 0.3f, 0.3f)   // Red-ish for PVP zones
-                : new Vector3f(0.3f, 1.0f, 0.3f);  // Green for safe zones
+            Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f);  // Green for safe zones
 
             // Create transform matrix for the cube
             Matrix4d matrix = new Matrix4d();
@@ -460,60 +455,6 @@ public class RaidingCommand extends CommandBase {
 
             // Draw the debug cube
             DebugUtils.add(world, DebugShape.Cube, matrix, color, DISPLAY_TIME, true);
-        }
-    }
-
-
-
-    /**
-     * /safezone flag <name> <flag> <true/false>
-     */
-    public static class FlagSubCommand extends AbstractPlayerCommand {
-        private final RustyRaidingPlugin plugin;
-        private final RequiredArg<String> nameArg;
-        private final RequiredArg<String> flagArg;
-        private final RequiredArg<Boolean> valueArg;
-
-        public FlagSubCommand(RustyRaidingPlugin plugin) {
-            super("flag", "Set protection flag for a zone");
-            this.plugin = plugin;
-            this.nameArg = this.withRequiredArg("name", "Zone name", ArgTypes.STRING);
-            this.flagArg = this.withRequiredArg("flag", "Protection flag (PVP, BLOCK_PLACE, etc.)", ArgTypes.STRING);
-            this.valueArg = this.withRequiredArg("value", "true/false", ArgTypes.BOOLEAN);
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
-            String zoneName = nameArg.get(context);
-            String flagName = flagArg.get(context);
-            boolean value = valueArg.get(context);
-
-            ProtectionFlag flag;
-            try {
-                flag = ProtectionFlag.valueOf(flagName.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                 playerRef.sendMessage(MessageBuilder.create("Invalid flag: " + flagName).color(ColorPalette.ERROR).build());
-                 playerRef.sendMessage(MessageBuilder.create("Available flags: PVP, BLOCK_PLACE, BLOCK_BREAK, BLOCK_USE").color(ColorPalette.MUTED).build());
-                 return;
-            }
-
-            ZoneService.UpdateResult result = plugin.getZoneService().updateZone(
-                world.getName(), zoneName, null, null, Collections.singletonMap(flag, value));
-
-            switch (result) {
-                case SUCCESS -> playerRef.sendMessage(
-                    MessageBuilder.create("Flag " + flag + " set to " + value + " for zone '" + zoneName + "'.")
-                        .color(ColorPalette.SUCCESS)
-                        .build());
-                case NOT_FOUND -> playerRef.sendMessage(
-                    MessageBuilder.create("Zone '" + zoneName + "' not found in this world.")
-                        .color(ColorPalette.ERROR)
-                        .build());
-                case ERROR -> playerRef.sendMessage(
-                    MessageBuilder.create("Failed to update zone.")
-                        .color(ColorPalette.ERROR)
-                        .build());
-            }
         }
     }
 

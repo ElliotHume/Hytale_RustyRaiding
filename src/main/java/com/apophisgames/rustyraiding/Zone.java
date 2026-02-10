@@ -1,10 +1,10 @@
 package com.apophisgames.rustyraiding;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import javax.annotation.Nonnull;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -21,45 +21,30 @@ public record Zone(
     @Nonnull String zoneName,
     @Nonnull String worldName,
     @Nonnull Vector3d min,
-    @Nonnull Vector3d max,
-    @Nonnull Map<ProtectionFlag, Boolean> permissions
+    @Nonnull Vector3d max
 ) {
 
     /**
      * Create a new zone with auto-generated internal ID and default safezone flags (all disabled).
      */
     public static Zone create(String zoneName, String worldName, Vector3d min, Vector3d max) {
-        // Default safezone: All protections enabled
-        Map<ProtectionFlag, Boolean> defaults = new HashMap<>();
-        for (ProtectionFlag flag : ProtectionFlag.values()) {
-            defaults.put(flag, false);
-        }
-        return new Zone(UUID.randomUUID().toString(), zoneName, worldName, min, max, defaults);
+        return new Zone(UUID.randomUUID().toString(), zoneName, worldName, min, max);
     }
 
     /**
      * Create a copy with updated bounds.
      */
     public Zone withBounds(Vector3d newMin, Vector3d newMax) {
-        return new Zone(internalId, zoneName, worldName, newMin, newMax, new HashMap<>(permissions));
-    }
-
-    /**
-     * Create a copy with updated permission for a specific flag.
-     */
-    public Zone withPermission(ProtectionFlag flag, boolean allowed) {
-        Map<ProtectionFlag, Boolean> newPermissions = new HashMap<>(permissions);
-        newPermissions.put(flag, allowed);
-        return new Zone(internalId, zoneName, worldName, min, max, newPermissions);
+        return new Zone(internalId, zoneName, worldName, newMin, newMax);
     }
 
     /**
      * Check if a specific action is allowed in this zone.
      * Defaults to true (ALLOWED) if the flag is missing, though create() populates all.
      */
-    public boolean isAllowed(ProtectionFlag flag) {
-        return permissions.getOrDefault(flag, true);
-    }
+    public boolean isAuthed(Player player) {
+        return true;
+    } // TODO: HERE FOR CHECKING PLAYER IS AUTH
 
     /**
      * Check if a position is within this zone.

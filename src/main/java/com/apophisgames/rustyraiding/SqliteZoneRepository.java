@@ -69,10 +69,6 @@ public class SqliteZoneRepository implements IZoneRepository {
                 max_x DOUBLE NOT NULL,
                 max_y DOUBLE NOT NULL,
                 max_z DOUBLE NOT NULL,
-                pvp_enabled BOOLEAN NOT NULL DEFAULT 0,
-                block_place_enabled BOOLEAN NOT NULL DEFAULT 0,
-                block_break_enabled BOOLEAN NOT NULL DEFAULT 0,
-                block_use_enabled BOOLEAN NOT NULL DEFAULT 0,
                 UNIQUE(zone_name, world_name)
             )
             """;
@@ -136,9 +132,8 @@ public class SqliteZoneRepository implements IZoneRepository {
     public void save(Zone zone) throws Exception {
         // Upsert logic (Insert or Replace)
         String sql = """
-            INSERT INTO zones (id, zone_name, world_name, min_x, min_y, min_z, max_x, max_y, max_z, 
-                               pvp_enabled, block_place_enabled, block_break_enabled, block_use_enabled)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO zones (id, zone_name, world_name, min_x, min_y, min_z, max_x, max_y, max_z)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 zone_name=excluded.zone_name,
                 world_name=excluded.world_name,
@@ -147,11 +142,7 @@ public class SqliteZoneRepository implements IZoneRepository {
                 min_z=excluded.min_z,
                 max_x=excluded.max_x,
                 max_y=excluded.max_y,
-                max_z=excluded.max_z,
-                pvp_enabled=excluded.pvp_enabled,
-                block_place_enabled=excluded.block_place_enabled,
-                block_break_enabled=excluded.block_break_enabled,
-                block_use_enabled=excluded.block_use_enabled
+                max_z=excluded.max_z
             """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
@@ -164,11 +155,6 @@ public class SqliteZoneRepository implements IZoneRepository {
             stmt.setDouble(7, zone.max().x);
             stmt.setDouble(8, zone.max().y);
             stmt.setDouble(9, zone.max().z);
-            
-            stmt.setBoolean(10, zone.isAllowed(ProtectionFlag.PVP));
-            stmt.setBoolean(11, zone.isAllowed(ProtectionFlag.BLOCK_PLACE));
-            stmt.setBoolean(12, zone.isAllowed(ProtectionFlag.BLOCK_BREAK));
-            stmt.setBoolean(13, zone.isAllowed(ProtectionFlag.BLOCK_USE));
 
             stmt.executeUpdate();
         }
@@ -195,26 +181,12 @@ public class SqliteZoneRepository implements IZoneRepository {
     }
 
     private Zone mapToZone(ResultSet rs) throws SQLException {
-        Map<ProtectionFlag, Boolean> permissions = new HashMap<>();
-        permissions.put(ProtectionFlag.PVP, rs.getBoolean("pvp_enabled"));
-        try {
-            permissions.put(ProtectionFlag.BLOCK_PLACE, rs.getBoolean("block_place_enabled"));
-            permissions.put(ProtectionFlag.BLOCK_BREAK, rs.getBoolean("block_break_enabled"));
-            permissions.put(ProtectionFlag.BLOCK_USE, rs.getBoolean("block_use_enabled"));
-        } catch (SQLException ignored) {
-            // Fallback for old schemas if migration failed (shouldn't happen with migration logic)
-            permissions.put(ProtectionFlag.BLOCK_PLACE, false);
-            permissions.put(ProtectionFlag.BLOCK_BREAK, false);
-            permissions.put(ProtectionFlag.BLOCK_USE, false);
-        }
-
         return new Zone(
             rs.getString("id"),
             rs.getString("zone_name"),
             rs.getString("world_name"),
             new Vector3d(rs.getDouble("min_x"), rs.getDouble("min_y"), rs.getDouble("min_z")),
-            new Vector3d(rs.getDouble("max_x"), rs.getDouble("max_y"), rs.getDouble("max_z")),
-            permissions
+            new Vector3d(rs.getDouble("max_x"), rs.getDouble("max_y"), rs.getDouble("max_z"))
         );
     }
 }

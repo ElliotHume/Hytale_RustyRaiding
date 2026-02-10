@@ -67,9 +67,14 @@ public class ZoneInteractionPacketHandler implements PacketFilter {
             return false;
         }
 
+        Player player = ref.getStore().getComponent(ref, Player.getComponentType());
+        if (player == null){
+            return false;
+        }
+
         // If there is no protection zone, or the zone allows block use, allow the packet
         Zone zone = service.getZoneAt(world.getName(), targetPos);
-        if (zone == null || zone.isAllowed(ProtectionFlag.BLOCK_USE)) {
+        if (zone == null) {
             return false;
         }
 
@@ -77,11 +82,10 @@ public class ZoneInteractionPacketHandler implements PacketFilter {
             if (!ref.isValid()) return;
 
             // Access Player component SAFELY on world thread
-            Player player = ref.getStore().getComponent(ref, Player.getComponentType());
-            boolean hasBypass = player != null && (player.hasPermission("easy-safezone.bypass.use", false) || player.hasPermission("easy-safezone.bypass.all", false));
+            boolean isAuthed = zone.isAuthed(player);
 
-            if (hasBypass) {
-                // User has bypass, so we manually apply the packet we blocked
+            if (isAuthed) {
+                // User has Auth, so we manually apply the packet we blocked
                 try {
                     LOGGER.atFine().log("Player %s used bypass to interact in protected zone %s", player.getDisplayName(), zone.zoneName());
                     handler.handle(chains);

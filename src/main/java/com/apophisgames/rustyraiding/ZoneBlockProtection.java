@@ -71,7 +71,7 @@ public class ZoneBlockProtection {
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
-            if (zone != null && !zone.isAllowed(ProtectionFlag.BLOCK_PLACE)) {
+            if (zone != null && !zone.isAuthed(player)) {
                 event.setCancelled(true);
             }
         }
@@ -116,7 +116,7 @@ public class ZoneBlockProtection {
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
-            if (zone != null && !zone.isAllowed(ProtectionFlag.BLOCK_BREAK)) {
+            if (zone != null && !zone.isAuthed(player)) {
                 event.setCancelled(true);
             }
         }
@@ -161,7 +161,7 @@ public class ZoneBlockProtection {
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
-            if (zone != null && !zone.isAllowed(ProtectionFlag.BLOCK_USE)) {
+            if (zone != null && !zone.isAuthed(player)) {
                 event.setCancelled(true);
             }
         }
