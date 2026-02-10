@@ -19,9 +19,11 @@ public class ZoneService {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     private final IZoneRepository repository;
+    private final IAuthRepository authRepository;
 
-    public ZoneService(@Nonnull IZoneRepository repository) {
+    public ZoneService(@Nonnull IZoneRepository repository, @Nonnull IAuthRepository authRepository) {
         this.repository = repository;
+        this.authRepository = authRepository;
     }
 
     // ============================================
@@ -47,6 +49,12 @@ public class ZoneService {
     public void initialize() {
         try {
             repository.initialize();
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed to initialize ZoneService");
+        }
+
+        try {
+            authRepository.initialize();
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log("Failed to initialize ZoneService");
         }
@@ -182,10 +190,62 @@ public class ZoneService {
     }
 
     // ============================================
+    // Auth Query Methods
+    // ============================================
+
+    @Nullable
+    public List<String> getAuthedPlayersByZoneId(String zoneId) {
+        try {
+            return authRepository.findByZone(zoneId);
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Error finding zone players by zone name");
+            return null;
+        }
+    }
+
+    public boolean playerIsAuthed(String zoneId, String playerId) {
+        if (playerId == null)
+            return false;
+
+        return getAuthedPlayersByZoneId(zoneId).contains(playerId);
+    }
+
+    // ============================================
+    // Auth Write Methods
+    // ============================================
+
+    public CreateResult AuthenticatePlayerInZone(String zoneId, String playerId) {
+        if (playerIsAuthed(zoneId, playerId)) {
+            return CreateResult.ALREADY_EXISTS;
+        }
+
+        try {
+            authRepository.save(ZoneAuthorization.create(zoneId, playerId));
+            LOGGER.atInfo().log("Created zone authorization in zone: " + zoneId +" for player: "+playerId);
+            return CreateResult.SUCCESS;
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed to authorize player: "+playerId+ " in zone: " + zoneId);
+            return CreateResult.ERROR;
+        }
+    }
+
+    public boolean ClearZoneAuthentications(String zoneId) {
+        try {
+            authRepository.delete(zoneId);
+            LOGGER.atInfo().log("Cleared authorizations for zone: " + zoneId);
+            return true;
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed to clear authorizations for zone: " + zoneId);
+            return false;
+        }
+    }
+
+    // ============================================
     // Lifecycle
     // ============================================
 
     public void shutdown() {
         repository.close();
+        authRepository.close();
     }
 }

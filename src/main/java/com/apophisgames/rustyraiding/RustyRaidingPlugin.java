@@ -27,9 +27,13 @@ public class RustyRaidingPlugin extends JavaPlugin {
         getLogger().atInfo().log("Setting up Rusty Raiding...");
 
         // Initialize service
-        IZoneRepository sqliteRepo = new SqliteZoneRepository(getDataDirectory());
-        IZoneRepository cachedRepo = new CachedZoneRepository(sqliteRepo);
-        zoneService = new ZoneService(cachedRepo);
+        IZoneRepository zoneSqliteRepo = new SqliteZoneRepository(getDataDirectory());
+        IZoneRepository zoneCachedRepo = new CachedZoneRepository(zoneSqliteRepo);
+
+        IAuthRepository authSqliteRepo = new SqliteZoneAuthorizationRepository(getDataDirectory());
+        IAuthRepository authCachedRepo = new CachedZoneAuthorizationRepository(authSqliteRepo);
+
+        zoneService = new ZoneService(zoneCachedRepo, authCachedRepo);
         zoneService.initialize();
 
         // Register command

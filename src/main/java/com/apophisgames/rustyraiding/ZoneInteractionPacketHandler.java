@@ -48,7 +48,7 @@ public class ZoneInteractionPacketHandler implements PacketFilter {
 
         SyncInteractionChain chain = chains.updates[0];
         PlayerRef playerRef = handler.getPlayerRef();
-        if (playerRef == null || chain.interactionType != InteractionType.Use) {
+        if (chain.interactionType != InteractionType.Use) {
             return false;
         }
 
@@ -74,15 +74,13 @@ public class ZoneInteractionPacketHandler implements PacketFilter {
 
         // If there is no protection zone, or the zone allows block use, allow the packet
         Zone zone = service.getZoneAt(world.getName(), targetPos);
-        if (zone == null) {
-            return false;
-        }
+        if (zone == null) return false;
 
         world.execute(() -> {
             if (!ref.isValid()) return;
 
             // Access Player component SAFELY on world thread
-            boolean isAuthed = zone.isAuthed(player);
+            boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
 
             if (isAuthed) {
                 // User has Auth, so we manually apply the packet we blocked

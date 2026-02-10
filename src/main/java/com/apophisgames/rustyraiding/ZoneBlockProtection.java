@@ -59,9 +59,7 @@ public class ZoneBlockProtection {
             if (service == null) return;
 
             Player player = chunk.getComponent(index, Player.getComponentType());
-            if (player != null && (player.hasPermission("easy-safezone.bypass.place", false) || player.hasPermission("easy-safezone.bypass.all", false))) {
-                 return;
-            }
+            if (player == null) return;
 
             World world = store.getExternalData().getWorld();
             TransformComponent transform = chunk.getComponent(index, TransformComponent.getComponentType());
@@ -71,9 +69,12 @@ public class ZoneBlockProtection {
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
-            if (zone != null && !zone.isAuthed(player)) {
+            if (zone == null) return;
+
+            boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
+
+            if (!isAuthed)
                 event.setCancelled(true);
-            }
         }
     }
 
@@ -106,9 +107,7 @@ public class ZoneBlockProtection {
             if (service == null) return;
 
             Player player = chunk.getComponent(index, Player.getComponentType());
-            if (player != null && (player.hasPermission("easy-safezone.bypass.break", false) || player.hasPermission("easy-safezone.bypass.all", false))) {
-                 return;
-            }
+            if (player == null) return;
 
             World world = store.getExternalData().getWorld();
             
@@ -116,9 +115,12 @@ public class ZoneBlockProtection {
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
-            if (zone != null && !zone.isAuthed(player)) {
+            if (zone == null) return;
+
+            boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
+
+            if (!isAuthed)
                 event.setCancelled(true);
-            }
         }
     }
 
@@ -151,9 +153,7 @@ public class ZoneBlockProtection {
             if (service == null) return;
 
             Player player = chunk.getComponent(index, Player.getComponentType());
-            if (player != null && (player.hasPermission("easy-safezone.bypass.use", false) || player.hasPermission("easy-safezone.bypass.all", false))) {
-                 return;
-            }
+            if (player == null) return;
 
             World world = store.getExternalData().getWorld();
             
@@ -161,9 +161,12 @@ public class ZoneBlockProtection {
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
-            if (zone != null && !zone.isAuthed(player)) {
+            if (zone == null) return;
+
+            boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
+
+            if (!isAuthed)
                 event.setCancelled(true);
-            }
         }
     }
 }

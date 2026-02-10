@@ -69,7 +69,7 @@ public class SqliteZoneAuthorizationRepository implements IAuthRepository {
         try (Statement stmt = getConnection().createStatement()) {
             stmt.execute(sql);
             // Index for faster lookups by zone id
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_zones_world ON zones(zone_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_zone_auths ON zoneauths(zone_id)");
         }
     }
 
@@ -91,7 +91,7 @@ public class SqliteZoneAuthorizationRepository implements IAuthRepository {
 
     @Override
     public List<String> findByZone(String zoneId) throws Exception {
-        String sql = "SELECT * FROM zonesauths WHERE zone_id = ?";
+        String sql = "SELECT * FROM zoneauths WHERE zone_id = ?";
         List<String> result = new ArrayList<>();
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {

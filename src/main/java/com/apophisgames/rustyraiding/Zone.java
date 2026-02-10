@@ -39,14 +39,6 @@ public record Zone(
     }
 
     /**
-     * Check if a specific action is allowed in this zone.
-     * Defaults to true (ALLOWED) if the flag is missing, though create() populates all.
-     */
-    public boolean isAuthed(Player player) {
-        return true;
-    } // TODO: HERE FOR CHECKING PLAYER IS AUTH
-
-    /**
      * Check if a position is within this zone.
      *
      * @param position The position to check

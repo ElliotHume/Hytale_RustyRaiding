@@ -29,14 +29,16 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 
 /**
- * Command to manage SafeZones.
+ * Command to manage Raiding Zones.
  * 
  * <p>Usage:
  * <ul>
- *  <li>/safezone create <name> [--pvp-enabled] - Create a zone from current builder selection</li>
- *  <li>/safezone update <name> [--pvp-enabled] - Update a zone (selection optional if flag provided)</li>
- *  <li>/safezone delete <name> - Delete a zone</li>
- *  <li>/safezone list - List all zones in current world</li>
+ *  <li>/raiding create <name> - Create a zone from current builder selection</li>
+ *  <li>/raiding update <name> - Update a zone (selection optional if flag provided)</li>
+ *  <li>/raiding delete <name> - Delete a zone</li>
+ *  <li>/raiding clearauth <name> - Clear all authorizations for a zone</li>
+ *  <li>/raiding grantplayerauth <name> - Grant a user authorization for a zone</li>
+ *  <li>/raiding list - List all zones in current world</li>
  * </ul>
  */
 public class RaidingCommand extends CommandBase {
@@ -44,10 +46,10 @@ public class RaidingCommand extends CommandBase {
     private final RustyRaidingPlugin plugin;
 
     public RaidingCommand(RustyRaidingPlugin plugin) {
-        super("safezone", "Manage SafeZones");
+        super("raiding", "Manage Raiding Zones");
         this.plugin = plugin;
         
-        this.addAliases("sz");
+        this.addAliases("rr");
 
         // Register subcommands
         this.addSubCommand(new CreateSubCommand(plugin));
@@ -56,8 +58,10 @@ public class RaidingCommand extends CommandBase {
         this.addSubCommand(new DeleteSubCommand(plugin));
         this.addSubCommand(new ListSubCommand(plugin));
         this.addSubCommand(new ShowSubCommand(plugin));
+        this.addSubCommand(new ClearAuthSubCommand(plugin));
+        this.addSubCommand(new GrantPlayerAuthSubCommand(plugin));
 
-        this.requirePermission("easy-safezone.admin");
+        this.requirePermission("raiding.admin");
     }
 
     @Override
@@ -69,13 +73,13 @@ public class RaidingCommand extends CommandBase {
         
         // Show help if no subcommand matched
         context.sendMessage(MessageBuilder.create("Usage:").color(ColorPalette.INFO).build());
-        context.sendMessage(MessageBuilder.create("  /safezone create <name>").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /safezone update <name> - Update bounds from selection").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /safezone flag <name> <flag> <true/false> - Set protection").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /safezone edit <name>").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /safezone delete <name>").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /safezone list").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /safezone show <name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding create <name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding update <name> - Update bounds from selection").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding flag <name> <flag> <true/false> - Set protection").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding edit <name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding delete <name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding list").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding show <name>").color(ColorPalette.WHITE).build());
     }
 
     // ============================================
@@ -115,9 +119,8 @@ public class RaidingCommand extends CommandBase {
     // ============================================
 
     /**
-     * /safezone create <name>
-     * Creates a new safezone from current selection. Fails if zone already exists.
-     * PVP is disabled by default (safe zone).
+     * /raiding create <name>
+     * Creates a new raiding from current selection. Fails if zone already exists.
      */
     public static class CreateSubCommand extends AbstractPlayerCommand {
         private final RustyRaidingPlugin plugin;
@@ -141,15 +144,14 @@ public class RaidingCommand extends CommandBase {
             }
 
             Zone zone = Zone.create(zoneName, world.getName(), bounds.min(), bounds.max());
-            // Default to safe zone (all flags false)
-            
+
             ZoneService.CreateResult result = plugin.getZoneService().createZone(zone);
 
             switch (result) {
                 case SUCCESS -> playerRef.sendMessage(
                     MessageBuilder.create("SafeZone '" + zoneName + "' created!")
                         .color(ColorPalette.SUCCESS)
-                        .append(" (Modify flags with /safezone flag)", ColorPalette.MUTED)
+                        .append(" (Modify flags with /raiding flag)", ColorPalette.MUTED)
                         .build());
                 case ALREADY_EXISTS -> playerRef.sendMessage(
                     MessageBuilder.create("A zone named '" + zoneName + "' already exists in this world.")
@@ -164,7 +166,7 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /safezone update <name>
+     * /raiding update <name>
      * Updates an existing zone. Selection is optional if a flag is provided.
      */
     public static class UpdateSubCommand extends AbstractPlayerCommand {
@@ -215,7 +217,7 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /safezone edit <name>
+     * /raiding edit <name>
      */
     public static class EditSubCommand extends AbstractPlayerCommand {
         private final RustyRaidingPlugin plugin;
@@ -259,7 +261,7 @@ public class RaidingCommand extends CommandBase {
                 if (zone == null) {
                     playerRef.sendMessage(MessageBuilder.create("No zones found within 100 blocks.")
                         .color(ColorPalette.ERROR)
-                        .append(" Use /safezone edit <name> to edit a specific zone.", ColorPalette.MUTED)
+                        .append(" Use /raiding edit <name> to edit a specific zone.", ColorPalette.MUTED)
                         .build());
                     return;
                 }
@@ -268,7 +270,7 @@ public class RaidingCommand extends CommandBase {
 
             // Set selection
             setBuilderSelection(store, ref, playerRef, zone);
-            playerRef.sendMessage(MessageBuilder.create("Selected zone '" + zone.zoneName() + "'. Use builder tools to modify and then /safezone update.").color(ColorPalette.SUCCESS).build());
+            playerRef.sendMessage(MessageBuilder.create("Selected zone '" + zone.zoneName() + "'. Use builder tools to modify and then /raiding update.").color(ColorPalette.SUCCESS).build());
         }
 
         private void setBuilderSelection(Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef playerRef, Zone zone) {
@@ -287,7 +289,7 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /safezone delete <name>
+     * /raiding delete <name>
      */
     public static class DeleteSubCommand extends AbstractPlayerCommand {
         private final RustyRaidingPlugin plugin;
@@ -313,13 +315,13 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /safezone list
+     * /raiding list
      */
     public static class ListSubCommand extends AbstractPlayerCommand {
         private final RustyRaidingPlugin plugin;
 
         public ListSubCommand(RustyRaidingPlugin plugin) {
-            super("list", "List SafeZones");
+            super("list", "List Raiding Zones");
             this.plugin = plugin;
         }
 
@@ -327,7 +329,7 @@ public class RaidingCommand extends CommandBase {
         protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
             var zones = plugin.getZoneService().getZones(world.getName());
             
-            playerRef.sendMessage(MessageBuilder.create("SafeZones in " + world.getName() + ":").color(ColorPalette.INFO).build());
+            playerRef.sendMessage(MessageBuilder.create("Raiding Zones in " + world.getName() + ":").color(ColorPalette.INFO).build());
             if (zones.isEmpty()) {
                 playerRef.sendMessage(MessageBuilder.create("  (None)").color(ColorPalette.MUTED).build());
             } else {
@@ -341,7 +343,94 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /safezone show <name>
+     * /raiding clearauth <name>
+     * Clears all authorizations for a zone.
+     * */
+    public static class ClearAuthSubCommand extends AbstractPlayerCommand {
+        private final RustyRaidingPlugin plugin;
+        private final RequiredArg<String> zoneNameArg;
+
+        public ClearAuthSubCommand(RustyRaidingPlugin plugin) {
+            super("clearauth", "Clear all authorizations for a zone");
+            this.plugin = plugin;
+            this.zoneNameArg = this.withRequiredArg("zone_name", "Zone name", ArgTypes.STRING);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+            String zoneName = zoneNameArg.get(context);
+
+            boolean result = plugin.getZoneService().ClearZoneAuthentications(zoneName);
+
+            if (result){
+                playerRef.sendMessage(MessageBuilder.create("Cleared authorizations for zone: " + zoneName + "!")
+                        .color(ColorPalette.SUCCESS)
+                        .append(" (Modify flags with /raiding flag)", ColorPalette.MUTED)
+                        .build());
+            } else {
+                playerRef.sendMessage(MessageBuilder.create("Failed to clear authorizations. Check server logs.")
+                        .color(ColorPalette.ERROR)
+                        .build());
+            }
+
+        }
+    }
+
+    /**
+     * /raiding grantplayerauth <zone name> <player display name>
+     * Grant a player authorization in a zone
+     * */
+    public static class GrantPlayerAuthSubCommand extends AbstractPlayerCommand {
+        private final RustyRaidingPlugin plugin;
+        private final RequiredArg<String> zoneNameArg;
+        private final RequiredArg<String> playerNameArg;
+
+        public GrantPlayerAuthSubCommand(RustyRaidingPlugin plugin) {
+            super("grantplayerauth", "Grant a player authorization in a zone");
+            this.plugin = plugin;
+            this.zoneNameArg = this.withRequiredArg("zone_name", "Zone name", ArgTypes.STRING);
+            this.playerNameArg = this.withRequiredArg("player_display_name", "Player Display name", ArgTypes.STRING);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+            String zoneName = zoneNameArg.get(context);
+            String playerDisplayName = playerNameArg.get(context);
+
+            ZoneService.CreateResult result = plugin.getZoneService().AuthenticatePlayerInZone(zoneName, playerDisplayName);
+
+            switch (result) {
+                case SUCCESS -> playerRef.sendMessage(
+                        MessageBuilder.create("Authorization in zone '" + zoneName + "' granted for player '"+playerDisplayName+"'")
+                                .color(ColorPalette.SUCCESS)
+                                .build());
+                case ALREADY_EXISTS -> playerRef.sendMessage(
+                        MessageBuilder.create("Player '"+playerDisplayName+"' is already authorized in zone '" + zoneName)
+                                .color(ColorPalette.ERROR)
+                                .build());
+                case ERROR -> playerRef.sendMessage(
+                        MessageBuilder.create("Failed to authorize player in zone. Check server logs.")
+                                .color(ColorPalette.ERROR)
+                                .build());
+            }
+
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * /raiding show <name>
      * Shows the closest zone (within 100 blocks) or a specific zone by name.
      */
     public static class ShowSubCommand extends AbstractPlayerCommand {
@@ -374,7 +463,7 @@ public class RaidingCommand extends CommandBase {
             if (closest == null) {
                 playerRef.sendMessage(MessageBuilder.create("No zones found within " + (int) MAX_AUTO_DISTANCE + " blocks.")
                     .color(ColorPalette.ERROR)
-                    .append(" Use /safezone show <name> to show a specific zone.", ColorPalette.MUTED)
+                    .append(" Use /raiding show <name> to show a specific zone.", ColorPalette.MUTED)
                     .build());
                 return;
             }
@@ -388,7 +477,7 @@ public class RaidingCommand extends CommandBase {
         }
 
         /**
-         * Variant: /safezone show <name>
+         * Variant: /raiding show <name>
          */
         private static class ShowByNameVariant extends AbstractPlayerCommand {
             private final RustyRaidingPlugin plugin;
@@ -445,7 +534,7 @@ public class RaidingCommand extends CommandBase {
             double sizeY = zone.max().y - zone.min().y;
             double sizeZ = zone.max().z - zone.min().z;
 
-            Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f);  // Green for safe zones
+            Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f);
 
             // Create transform matrix for the cube
             Matrix4d matrix = new Matrix4d();
