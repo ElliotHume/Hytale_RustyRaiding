@@ -101,6 +101,19 @@ public class CachedZoneAuthorizationRepository implements IAuthRepository {
     }
 
     @Override
+    public void delete(String zoneId, String playerId) throws Exception {
+        // 1. Update Delegate
+        delegate.delete(zoneId, playerId);
+
+        // 2. Update the Cache
+        cache.computeIfPresent(zoneId, (key, playerIds) -> {
+            if (playerIds.contains(playerId))
+                playerIds.remove(playerId);
+            return playerIds;
+        });
+    }
+
+    @Override
     public void close() {
         delegate.close();
         cache.clear();

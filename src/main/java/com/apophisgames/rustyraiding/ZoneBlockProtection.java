@@ -37,6 +37,7 @@ public class ZoneBlockProtection {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     private static final List<String> BYPASS_GATHER_TYPES = List.of("Soils");
+    //private static final String TOOL_CUPBOARD_GATHER_TYPE = "RustyRaiding_ToolCupboard";
 
     private static final Query<EntityStore> QUERY = Query.and(
         Player.getComponentType(),
@@ -127,9 +128,6 @@ public class ZoneBlockProtection {
                            @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, 
                            @Nonnull BreakBlockEvent event) {
 
-            if (IsAllowedBlockType(event.getBlockType()))
-                return;
-
             ZoneService service = zoneService.get();
             if (service == null) return;
 
@@ -143,6 +141,15 @@ public class ZoneBlockProtection {
 
             Zone zone = service.getZoneAt(world.getName(), targetPos);
             if (zone == null) return;
+
+            BlockType blockType = event.getBlockType();
+            if (blockType.getId().equals("Bench_Tool_Cupboard")){
+                service.deleteZone(zone.worldName(), zone.zoneName());
+                return;
+            }
+
+            if (IsAllowedBlockType(blockType))
+                return;
 
             boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
 
@@ -175,7 +182,12 @@ public class ZoneBlockProtection {
         public void handle(int index, @Nonnull ArchetypeChunk<EntityStore> chunk, 
                            @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, 
                            @Nonnull UseBlockEvent.Pre event) {
-            
+
+            BlockType blockType = event.getBlockType();
+            if (blockType.getId().equals("Bench_Tool_Cupboard")){
+                return;
+            }
+
             ZoneService service = zoneService.get();
             if (service == null) return;
 

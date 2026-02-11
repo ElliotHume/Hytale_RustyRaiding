@@ -33,6 +33,13 @@ public interface IAuthRepository {
     void save(ZoneAuthorization zoneAuthorization) throws Exception;
 
     /**
+     * Delete a zone authorization in a specific zone
+     * @param zoneId The id of the zone to delete the authorization from
+     * @param playerId The id of the player to remove
+     */
+    void delete(String zoneId, String playerId) throws Exception;
+
+    /**
      * Delete all zone authorizations for a specific zone
      * @param zoneId The id of the zone to delete
      */

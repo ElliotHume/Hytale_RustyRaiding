@@ -1,12 +1,13 @@
 package com.apophisgames.rustyraiding;
 
+import com.apophisgames.rustyraiding.config.RaidingConfig;
 import com.apophisgames.rustyraiding.interactions.ToolCupboardInteraction;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.hypixel.hytale.server.core.util.Config;
 
 public class RustyRaidingPlugin extends JavaPlugin {
     
@@ -15,9 +16,12 @@ public class RustyRaidingPlugin extends JavaPlugin {
 
     public static ComponentType<ChunkStore, ToolCupboardDataComponent> TOOL_CUPBOARD_COMPONENT;
 
+    public static Config<RaidingConfig> CONFIG;
+
     public RustyRaidingPlugin(JavaPluginInit init) {
         super(init);
         instance = this;
+        CONFIG = this.withConfig("RustyRaiding", RaidingConfig.CODEC);
     }
 
     public static com.apophisgames.rustyraiding.RustyRaidingPlugin get() {
@@ -30,6 +34,9 @@ public class RustyRaidingPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
+        super.setup();
+        CONFIG.save();
+
         getLogger().atInfo().log("Setting up Rusty Raiding...");
 
         // Initialize service
@@ -50,11 +57,12 @@ public class RustyRaidingPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.BreakBlock(() -> zoneService));
         getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.UseBlock(() -> zoneService));
 
-        PacketAdapters.registerInbound(new ZoneInteractionPacketHandler(() -> zoneService));
+        //PacketAdapters.registerInbound(new ZoneInteractionPacketHandler(() -> zoneService));
 
         this.getCodecRegistry(Interaction.CODEC).register("RustyRaiding_ToolCupboard_Interaction", ToolCupboardInteraction.class, ToolCupboardInteraction.CODEC);
-        TOOL_CUPBOARD_COMPONENT = this.getChunkStoreRegistry().registerComponent(ToolCupboardDataComponent.class, "RustyRaiding_ToolCupboard_Interaction", ToolCupboardDataComponent.CODEC);
-        
+
+        // TOOL_CUPBOARD_COMPONENT = this.getChunkStoreRegistry().registerComponent(ToolCupboardDataComponent.class, "RustyRaiding_ToolCupboard_Interaction", ToolCupboardDataComponent.CODEC);
+
         getLogger().atInfo().log("Rusty Raiding setup complete.");
     }
     

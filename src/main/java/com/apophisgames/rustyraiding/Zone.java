@@ -1,8 +1,10 @@
 package com.apophisgames.rustyraiding;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -48,5 +50,10 @@ public record Zone(
         return position.x >= min.x && position.x < max.x &&
                position.y >= min.y && position.y < max.y &&
                position.z >= min.z && position.z < max.z;
+    }
+
+    public static String getZoneIdFromPosition(World world, Vector3i position){
+        String positionString = "%sa%db%dc%d".formatted(world.getName(), position.x, position.y, position.z);
+        return UUID.nameUUIDFromBytes(positionString.getBytes()).toString();
     }
 }

@@ -10,6 +10,8 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.protocol.packets.interface_.Page;
@@ -26,17 +28,21 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
+import java.util.logging.Level;
 
 public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.ToolCupboardEventData> {
 
-    private final Holder<ChunkStore> blockEntity;
-    private final World world;
+    private final ZoneService zoneService;
+    private final Zone zone;
 
-    public ToolCupboardPage(@Nonnull PlayerRef playerRef, Holder<ChunkStore> blockEntity, World world) {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    public ToolCupboardPage(@Nonnull PlayerRef playerRef, ZoneService zoneService, Zone zone) {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, ToolCupboardEventData.CODEC);
-        this.blockEntity = blockEntity;
-        this.world = world;
+        this.zoneService = zoneService;
+        this.zone = zone;
     }
 
     public static class ToolCupboardEventData {
@@ -62,16 +68,17 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
         commandBuilder.append("Pages/ToolCupboardPage.ui");
 
         ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
-        ToolCupboardDataComponent component = blockEntity.getComponent(RustyRaidingPlugin.TOOL_CUPBOARD_COMPONENT);
-        List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(component.getUuid());
-        // Zone zone = zoneService.getZoneByName(world.getName(),component.getUuid());
+        if (zone != null){
+            List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(zone.zoneName());
+            commandBuilder.set("#ZoneName.Text", zone.zoneName());
+            commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
+            buildPlayerList(commandBuilder, eventBuilder, authedPlayers);
+        } else {
+            commandBuilder.set("#ZoneName.Text", "Not Found");
+            commandBuilder.set("#PlayerCount.Text", "PLAYERS (?)");
 
-        // Set status
-        commandBuilder.set("#ZoneName.Text", component.getUuid().toString());
-        commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
-
-        // Build player list
-        buildPlayerList(commandBuilder, eventBuilder, authedPlayers);
+            buildPlayerList(commandBuilder, eventBuilder, new ArrayList<>());
+        }
 
         eventBuilder.addEventBinding(
                 CustomUIEventBindingType.Activating,
@@ -131,24 +138,30 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
     ) {
         Player player = (Player) store.getComponent(ref, Player.getComponentType());
         ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
-        ToolCupboardDataComponent component = blockEntity.getComponent(RustyRaidingPlugin.TOOL_CUPBOARD_COMPONENT);
-        String zoneId = component != null ? component.getUuid() : null;
 
         switch (data.action) {
             case "GrantPlayerAuth":
-                if (data.id != null && zoneId != null) {
-                    zoneService.AuthenticatePlayerInZone(zoneId, data.id);
-                    playerRef.sendMessage(Message.raw("Authenticated player '%s' in zone '%s'".formatted(data.id, zoneId)));
-                    refreshPage(ref, store);
+                if (zone != null && player != null) {
+                    zoneService.AuthenticatePlayerInZone(zone.zoneName(), player.getDisplayName());
+                    playerRef.sendMessage(Message.raw("Authenticated player '%s' in zone '%s'".formatted(player.getDisplayName(), zone.zoneName())));
                 }
+                refreshPage(ref, store);
                 break;
 
             case "ClearAuth":
-                if (data.id != null && zoneId != null) {
-                    zoneService.ClearZoneAuthentications(zoneId);
-                    playerRef.sendMessage(Message.raw("Cleared ALL authorizations in zone '%s'".formatted(zoneId)));
-                    refreshPage(ref, store);
+                if (zone != null) {
+                    zoneService.ClearZoneAuthentications(zone.zoneName());
+                    playerRef.sendMessage(Message.raw("Cleared ALL authorizations in zone '%s'".formatted(zone.zoneName())));
                 }
+                refreshPage(ref, store);
+                break;
+
+            case "RemovePlayerAuth":
+                if (zone != null && data.id != null) {
+                    zoneService.RemoveZoneAuthentication(zone.zoneName(), data.id);
+                    playerRef.sendMessage(Message.raw("Removed authentication for player '%s' in zone '%s'".formatted(data.id, zone.zoneName())));
+                }
+                refreshPage(ref, store);
                 break;
 
             case "Refresh":
@@ -169,14 +182,17 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
         UIEventBuilder eventBuilder = new UIEventBuilder();
 
         ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
-        ToolCupboardDataComponent component = blockEntity.getComponent(RustyRaidingPlugin.TOOL_CUPBOARD_COMPONENT);
-        List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(component.getUuid());
+        if (zone != null){
+            List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(zone.zoneName());
+            commandBuilder.set("#ZoneName.Text", zone.zoneName());
+            commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
+            buildPlayerList(commandBuilder, eventBuilder, authedPlayers);
+        } else {
+            commandBuilder.set("#ZoneName.Text", "Not Found");
+            commandBuilder.set("#PlayerCount.Text", "PLAYERS (?)");
 
-        commandBuilder.set("#ZoneName.Text", component.getUuid().toString());
-        commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
-
-        // Build player list
-        buildPlayerList(commandBuilder, eventBuilder, authedPlayers);
+            buildPlayerList(commandBuilder, eventBuilder, new ArrayList<>());
+        }
 
         sendUpdate(commandBuilder, eventBuilder, false);
     }

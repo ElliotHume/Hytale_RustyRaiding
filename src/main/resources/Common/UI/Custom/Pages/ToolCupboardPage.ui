@@ -7,7 +7,7 @@
 @PrimaryDestructiveButtonStyle = TextButtonStyle(
    Default: (Background: #d7282c, LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
    Hovered: (Background: #e9161b, LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
-   Pressed: (Background: #ff0005, LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center))
+   Pressed: (Background: #560500, LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center))
  );
 
 @SecondaryButtonStyle = TextButtonStyle(
@@ -49,7 +49,7 @@ Group {
 
     Label #ZoneName {
       Text: "{uuid}";
-      Anchor: (Width: 90);
+      Anchor: (Width: 250);
       Style: (FontSize: 14, TextColor: #ff6b6b, RenderBold: true, VerticalAlignment: Center);
     }
   }
@@ -93,22 +93,22 @@ Group {
 
     TextButton #AddAuthButton {
       Text: "Authorize";
-      Anchor: (Width: 130, Height: 36);
+      Anchor: (Width: 100, Height: 36);
       Style: @PrimaryButtonStyle;
     }
 
     Group { Anchor: (Width: 10); }
 
     TextButton #ClearAuthButton {
-      Text: "Clear ALL Authorizations";
-      Anchor: (Width: 130, Height: 36);
+      Text: "Clear Authorizations";
+      Anchor: (Width: 160, Height: 36);
       Style: @PrimaryDestructiveButtonStyle;
     }
 
     Group { Anchor: (Width: 10); }
 
     TextButton #RefreshButton {
-      Text: "REFRESH";
+      Text: "Refresh";
       Anchor: (Width: 90, Height: 36);
       Style: @SecondaryButtonStyle;
     }

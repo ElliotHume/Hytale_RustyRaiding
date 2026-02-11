@@ -240,6 +240,17 @@ public class ZoneService {
         }
     }
 
+    public boolean RemoveZoneAuthentication(String zoneId, String playerId){
+        try {
+            authRepository.delete(zoneId, playerId);
+            LOGGER.atInfo().log("Removed Authorization for player '%s' in zone '%s'".formatted(playerId, zoneId));
+            return true;
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed when trying to remove authorization for player '%s' in zone '%s'".formatted(playerId, zoneId));
+            return false;
+        }
+    }
+
     // ============================================
     // Lifecycle
     // ============================================

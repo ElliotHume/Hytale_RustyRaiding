@@ -11,6 +11,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.DebugShape;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
@@ -26,7 +27,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.swing.text.html.Option;
 import java.util.Collections;
+import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Command to manage Raiding Zones.
@@ -60,6 +64,7 @@ public class RaidingCommand extends CommandBase {
         this.addSubCommand(new ShowSubCommand(plugin));
         this.addSubCommand(new ClearAuthSubCommand(plugin));
         this.addSubCommand(new GrantPlayerAuthSubCommand(plugin));
+        this.addSubCommand(new ListAuthsSubCommand(plugin));
 
         this.requirePermission("raiding.admin");
     }
@@ -147,21 +152,24 @@ public class RaidingCommand extends CommandBase {
 
             ZoneService.CreateResult result = plugin.getZoneService().createZone(zone);
 
+            Message message = null;
             switch (result) {
-                case SUCCESS -> playerRef.sendMessage(
-                    MessageBuilder.create("SafeZone '" + zoneName + "' created!")
+                case SUCCESS ->
+                        message = MessageBuilder.create("SafeZone '" + zoneName + "' created!")
                         .color(ColorPalette.SUCCESS)
                         .append(" (Modify flags with /raiding flag)", ColorPalette.MUTED)
-                        .build());
-                case ALREADY_EXISTS -> playerRef.sendMessage(
-                    MessageBuilder.create("A zone named '" + zoneName + "' already exists in this world.")
+                        .build();
+                case ALREADY_EXISTS ->
+                        message = MessageBuilder.create("A zone named '" + zoneName + "' already exists in this world.")
                         .color(ColorPalette.ERROR)
-                        .build());
-                case ERROR -> playerRef.sendMessage(
-                    MessageBuilder.create("Failed to create zone. Check server logs.")
+                        .build();
+                case ERROR ->
+                        message = MessageBuilder.create("Failed to create zone. Check server logs.")
                         .color(ColorPalette.ERROR)
-                        .build());
+                        .build();
             }
+            playerRef.sendMessage(message);
+            LOGGER.at(Level.INFO).log(message.getRawText());
         }
     }
 
@@ -334,9 +342,11 @@ public class RaidingCommand extends CommandBase {
                 playerRef.sendMessage(MessageBuilder.create("  (None)").color(ColorPalette.MUTED).build());
             } else {
                 for (Zone zone : zones) {
-                    playerRef.sendMessage(MessageBuilder.create("  - " + zone.zoneName()).color(ColorPalette.WHITE)
+                    Message msg = MessageBuilder.create("  - " + zone.zoneName()).color(ColorPalette.WHITE)
                         .append(" " + formatCenter(zone), ColorPalette.MUTED)
-                        .build());
+                        .build();
+                    playerRef.sendMessage(msg);
+                    LOGGER.at(Level.INFO).log("zoneId: %s   at %s".formatted(zone.zoneName(), formatCenter(zone)));
                 }
             }
         }
@@ -418,6 +428,57 @@ public class RaidingCommand extends CommandBase {
     }
 
 
+    /**
+     * /raiding list
+     */
+    public static class ListAuthsSubCommand extends AbstractPlayerCommand {
+        private static final double MAX_AUTO_DISTANCE = 100.0;
+
+        private final RustyRaidingPlugin plugin;
+        private final OptionalArg<String> zoneNameArg;
+
+        public ListAuthsSubCommand(RustyRaidingPlugin plugin) {
+            super("listauths", "List Raiding Zone Authorizations");
+            this.zoneNameArg = this.withOptionalArg("zone_name", "Zone name", ArgTypes.STRING);
+            this.plugin = plugin;
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+            String zoneName = zoneNameArg.get(context);
+            if (zoneName == null){
+                // Get player position
+                TransformComponent transform = (TransformComponent) store.getComponent(ref, TransformComponent.getComponentType());
+                if (transform == null) {
+                    playerRef.sendMessage(MessageBuilder.create("Could not get player position.").color(ColorPalette.ERROR).build());
+                    return;
+                }
+                Vector3d playerPos = transform.getPosition();
+
+                // Find closest zone within 100 blocks
+                Zone closest = plugin.getZoneService().getClosestZone(world.getName(), playerPos, MAX_AUTO_DISTANCE);
+                if (closest != null)
+                    zoneName = closest.zoneName();
+            }
+            if (zoneName == null){
+                playerRef.sendMessage(MessageBuilder.create("Could not find Zone").color(ColorPalette.ERROR).build());
+                return;
+            }
+
+            List<String> auths = plugin.getZoneService().getAuthedPlayersByZoneId(zoneName);
+
+            playerRef.sendMessage(MessageBuilder.create("Authorizations in Zone" + world.getName() + ":").color(ColorPalette.INFO).build());
+            if (auths == null || auths.isEmpty()) {
+                playerRef.sendMessage(MessageBuilder.create("  (None)").color(ColorPalette.MUTED).build());
+            } else {
+                for (String auth : auths) {
+                    Message msg = MessageBuilder.create("  - " + auth).color(ColorPalette.WHITE)
+                            .build();
+                    playerRef.sendMessage(msg);
+                }
+            }
+        }
+    }
 
 
 
@@ -435,7 +496,7 @@ public class RaidingCommand extends CommandBase {
      */
     public static class ShowSubCommand extends AbstractPlayerCommand {
         private static final double MAX_AUTO_DISTANCE = 100.0;
-        private static final float DISPLAY_TIME = 30.0f;
+        private static final float DISPLAY_TIME = 15.0f;
 
         private final RustyRaidingPlugin plugin;
 

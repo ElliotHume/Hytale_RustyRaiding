@@ -135,6 +135,16 @@ public class SqliteZoneAuthorizationRepository implements IAuthRepository {
     }
 
     @Override
+    public void delete(String zoneId, String playerId) throws Exception {
+        String sql = "DELETE FROM zoneauths WHERE zone_id = ? AND player_id = ?";
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setString(1, zoneId);
+            stmt.setString(2, playerId);
+            stmt.executeUpdate();
+        }
+    }
+
+    @Override
     public void close() {
         if (connection != null) {
             try {
