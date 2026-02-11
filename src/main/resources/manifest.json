@@ -2,5 +2,6 @@
   "Group": "com.apophisgames",
   "Name": "RustRaiding",
   "Version": "1.0.0",
-  "Main": "com.apophisgames.rustyraiding.RustyRaidingPlugin"
+  "Main": "com.apophisgames.rustyraiding.RustyRaidingPlugin",
+  "IncludesAssetPack": true
 }

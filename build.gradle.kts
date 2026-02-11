@@ -120,3 +120,9 @@ tasks.register<Copy>("deploy") {
         println("Deployed ${tasks.shadowJar.get().archiveFile.get().asFile.name} to z-server/mods/")
     }
 }
+
+tasks.jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from("src/main/resources")
+}

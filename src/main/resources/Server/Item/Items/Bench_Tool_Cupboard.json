@@ -1,0 +1,100 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Bench_Tool_Cupboard.name",
+    "Description": "server.items.Bench_Tool_Cupboard.description"
+  },
+  "PlayerAnimationsId": "Block",
+  "Icon": "Icons/ItemsGenerated/Bench_Tool_Cupboard.png",
+  "IconProperties": {
+    "Scale": 0.4,
+    "Rotation": [
+      11,
+      15,
+      3
+    ],
+    "Translation": [
+      0,
+      -31
+    ]
+  },
+  "Recipe": {
+    "Input": [
+      {
+        "Quantity": 30,
+        "ResourceTypeId": "Wood_Trunk"
+      },
+      {
+        "ItemId": "Ingredient_Bar_Iron",
+        "Quantity": 15
+      },
+      {
+        "ItemId": "Ingredient_Fabric_Scrap_Linen",
+        "Quantity": 10
+      },
+      {
+        "ItemId": "Ingredient_Leather_Medium",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Categories": [
+          "Tools"
+        ],
+        "Id": "Fieldcraft"
+      }
+    ]
+  },
+  "BlockType": {
+    "BlockParticleSetId": "Wood",
+    "BlockSoundSetId": "Wood",
+    "CustomModel": "Resources/ToolCupboard.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Resources/ToolCupboard_Texture.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Benches"
+      }
+    },
+    "HitboxType": "Tool_Cupboard_BlockBoundingBox",
+    "Material": "Solid",
+    "ParticleColor": "#5b3222",
+    "Support": {
+      "Down": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "VariantRotation": "NESW",
+    "Interactions": {
+      "Primary": "Break_Container",
+      "Use": "RustyRaiding_ToolCupboard_OpenRoot"
+    }
+  },
+  "ResourceTypes": [
+    {
+      "Id": "Fuel"
+    },
+    {
+      "Id": "Charcoal"
+    }
+  ],
+  "Tags": {
+    "Type": [
+      "Bench"
+    ]
+  },
+  "Scale": 0.8,
+  "ItemSoundSetId": "ISS_Blocks_Wood",
+  "MaxStack": 1,
+  "Categories": [
+    "Furniture.Benches"
+  ]
+}

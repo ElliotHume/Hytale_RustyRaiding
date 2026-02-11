@@ -20,7 +20,6 @@ public record ZoneAuthorization(
         @Nonnull String playerId
 
 ) {
-
     /**
      * Create a new zone with auto-generated internal ID and default safezone flags (all disabled).
      */

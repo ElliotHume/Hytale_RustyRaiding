@@ -67,9 +67,6 @@ public class ZoneBlockProtection {
         public void handle(int index, @Nonnull ArchetypeChunk<EntityStore> chunk, 
                            @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, 
                            @Nonnull PlaceBlockEvent event) {
-            
-            ZoneService service = zoneService.get();
-            if (service == null) return;
 
             // Raiders are allowed to bypass protections for certain types of blocks, like soils
             ItemStack itemInHand = event.getItemInHand();
@@ -77,22 +74,13 @@ public class ZoneBlockProtection {
                 String blockKey = itemInHand.getBlockKey();
                 if (blockKey != null){
                     BlockType blockAsset = BlockType.getAssetMap().getAsset(blockKey);
-                    if (blockAsset != null){
-                        BlockGathering gathering = blockAsset.getGathering();
-                        if (gathering != null){
-                            BlockBreakingDropType breakingDropType = gathering.getBreaking();
-                            if (breakingDropType != null){
-                                String gatherType = breakingDropType.getGatherType();
-                                if(gatherType != null && !gatherType.trim().isEmpty()){
-                                    LOGGER.at(Level.WARNING).log("Found Gathering Type: "+gatherType);
-                                    if (BYPASS_GATHER_TYPES.contains(gatherType))
-                                        return;
-                                }
-                            }
-                        }
-                    }
+                    if (IsAllowedBlockType(blockAsset))
+                        return;
                 }
             }
+
+            ZoneService service = zoneService.get();
+            if (service == null) return;
 
             Player player = chunk.getComponent(index, Player.getComponentType());
             if (player == null) return;
@@ -138,22 +126,12 @@ public class ZoneBlockProtection {
         public void handle(int index, @Nonnull ArchetypeChunk<EntityStore> chunk, 
                            @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, 
                            @Nonnull BreakBlockEvent event) {
-            
+
+            if (IsAllowedBlockType(event.getBlockType()))
+                return;
+
             ZoneService service = zoneService.get();
             if (service == null) return;
-
-            // Raiders are allowed to bypass protections for certain types of blocks, like soils
-            BlockGathering gathering = event.getBlockType().getGathering();
-            if (gathering != null){
-                BlockBreakingDropType breakingDropType = gathering.getBreaking();
-                if (breakingDropType != null){
-                    String gatherType = breakingDropType.getGatherType();
-                    if(gatherType != null && !gatherType.trim().isEmpty()){
-                        if (BYPASS_GATHER_TYPES.contains(gatherType))
-                            return;
-                    }
-                }
-            }
 
             Player player = chunk.getComponent(index, Player.getComponentType());
             if (player == null) return;
@@ -217,5 +195,24 @@ public class ZoneBlockProtection {
             if (!isAuthed)
                 event.setCancelled(true);
         }
+    }
+
+    private static boolean IsAllowedBlockType(BlockType blockType){
+        if (blockType == null)
+            return false;
+
+        // Raiders are allowed to bypass protections for certain types of blocks, like soils
+        BlockGathering gathering = blockType.getGathering();
+        if (gathering != null){
+            BlockBreakingDropType breakingDropType = gathering.getBreaking();
+            if (breakingDropType != null){
+                String gatherType = breakingDropType.getGatherType();
+                if(gatherType != null && !gatherType.trim().isEmpty()){
+                    return BYPASS_GATHER_TYPES.contains(gatherType);
+                }
+            }
+        }
+
+        return false;
     }
 }

@@ -1,13 +1,19 @@
 package com.apophisgames.rustyraiding;
 
+import com.apophisgames.rustyraiding.interactions.ToolCupboardInteraction;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 public class RustyRaidingPlugin extends JavaPlugin {
     
     private static com.apophisgames.rustyraiding.RustyRaidingPlugin instance;
     private ZoneService zoneService;
+
+    public static ComponentType<ChunkStore, ToolCupboardDataComponent> TOOL_CUPBOARD_COMPONENT;
 
     public RustyRaidingPlugin(JavaPluginInit init) {
         super(init);
@@ -45,6 +51,9 @@ public class RustyRaidingPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.UseBlock(() -> zoneService));
 
         PacketAdapters.registerInbound(new ZoneInteractionPacketHandler(() -> zoneService));
+
+        this.getCodecRegistry(Interaction.CODEC).register("RustyRaiding_ToolCupboard_Interaction", ToolCupboardInteraction.class, ToolCupboardInteraction.CODEC);
+        TOOL_CUPBOARD_COMPONENT = this.getChunkStoreRegistry().registerComponent(ToolCupboardDataComponent.class, "RustyRaiding_ToolCupboard_Interaction", ToolCupboardDataComponent.CODEC);
         
         getLogger().atInfo().log("Rusty Raiding setup complete.");
     }
