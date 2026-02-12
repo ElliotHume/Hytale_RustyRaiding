@@ -13,10 +13,15 @@ public class RaidingConfig {
             .append(new KeyedCodec<Integer>("Height", Codec.INTEGER),
                     (findConfig, integer, extraInfo) -> findConfig.Height = integer,
                     (findConfig, extraInfo) -> findConfig.Height).add()
+
+            .append(new KeyedCodec<Integer>("ReinforceBlockAmount", Codec.INTEGER),
+                    (findConfig, integer, extraInfo) -> findConfig.ReinforceBlockAmount = integer,
+                    (findConfig, extraInfo) -> findConfig.ReinforceBlockAmount).add()
             .build();
 
     private int Height = 15;
     private int Width = 15;
+    private int ReinforceBlockAmount = 10;
 
 
     public RaidingConfig() {
@@ -29,5 +34,9 @@ public class RaidingConfig {
     }
     public int getHeight() {
         return Height;
+    }
+
+    public int getReinforceBlockAmount() {
+        return ReinforceBlockAmount;
     }
 }

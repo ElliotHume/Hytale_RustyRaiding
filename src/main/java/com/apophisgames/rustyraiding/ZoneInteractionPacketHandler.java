@@ -1,5 +1,6 @@
 package com.apophisgames.rustyraiding;
 
+import com.apophisgames.rustyraiding.zones.Zone;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;

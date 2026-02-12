@@ -1,8 +1,7 @@
-package com.apophisgames.rustyraiding;
+package com.apophisgames.rustyraiding.zoneauthorizations;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Repository for persisting Zone Authorizations.

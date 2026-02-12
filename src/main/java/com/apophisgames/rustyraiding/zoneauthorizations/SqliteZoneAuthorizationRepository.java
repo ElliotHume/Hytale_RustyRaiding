@@ -1,4 +1,4 @@
-package com.apophisgames.rustyraiding;
+package com.apophisgames.rustyraiding.zoneauthorizations;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 

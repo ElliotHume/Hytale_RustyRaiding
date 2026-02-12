@@ -1,5 +1,7 @@
 package com.apophisgames.rustyraiding;
 
+import com.apophisgames.rustyraiding.reinforcedblocks.ReinforcedBlock;
+import com.apophisgames.rustyraiding.zones.Zone;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
@@ -23,11 +25,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 
 /**
  * consolidated systems for Zone block protections.
@@ -145,6 +145,7 @@ public class ZoneBlockProtection {
             BlockType blockType = event.getBlockType();
             if (blockType.getId().equals("Bench_Tool_Cupboard")){
                 service.deleteZone(zone.worldName(), zone.zoneName());
+                service.DeleteReinforcedBlocksInArea(zone.worldName(), zone.min().toVector3i(), zone.max().toVector3i());
                 return;
             }
 
@@ -153,9 +154,35 @@ public class ZoneBlockProtection {
 
             boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
 
-            if (!isAuthed)
-                event.setCancelled(true);
+            if (!isAuthed){
+                boolean shouldCancelBreak = true;
+                Optional<ReinforcedBlock> reinforcedBlock = service.getReinforcedBlockAtPosition(world.getName(), target);
+                if (reinforcedBlock.isEmpty()){
+                    int startingReinforcement = RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount()-1;
+                    // Create a reinforced block here if it is the first time a block is being broken without authorization (with -1 reinforcement because of this break).
+                    service.CreateReinforcedBlock(world.getName(), target, startingReinforcement);
+                    PlayReinforcedBreakEffects(target, startingReinforcement);
+                } else {
+                    int currentReinforcement = reinforcedBlock.get().reinforcement();
+                    if (currentReinforcement > 0){
+                        service.UpdateReinforcement(reinforcedBlock.get(), currentReinforcement-1);
+                        PlayReinforcedBreakEffects(target, currentReinforcement-1);
+                    } else {
+                        service.DeleteReinforcedBlock(reinforcedBlock.get());
+                        shouldCancelBreak = false;
+                    }
+                }
+
+                if (shouldCancelBreak)
+                    event.setCancelled(true);
+            }
+
         }
+    }
+
+    // TODO: Move to a new package?
+    private static void PlayReinforcedBreakEffects(Vector3i position, int reinforcement){
+        // TODO: Play reinforced break effects (particles, sounds)
     }
 
     public static class UseBlock extends EntityEventSystem<EntityStore, UseBlockEvent.Pre> {

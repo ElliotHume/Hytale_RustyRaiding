@@ -1,4 +1,4 @@
-package com.apophisgames.rustyraiding;
+package com.apophisgames.rustyraiding.zones;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;

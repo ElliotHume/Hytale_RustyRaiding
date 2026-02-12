@@ -1,6 +1,5 @@
-package com.apophisgames.rustyraiding;
+package com.apophisgames.rustyraiding.zones;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

@@ -2,6 +2,15 @@ package com.apophisgames.rustyraiding;
 
 import com.apophisgames.rustyraiding.config.RaidingConfig;
 import com.apophisgames.rustyraiding.interactions.ToolCupboardInteraction;
+import com.apophisgames.rustyraiding.reinforcedblocks.CachedReinforcedBlockRepository;
+import com.apophisgames.rustyraiding.reinforcedblocks.IReinforcedBlockRepository;
+import com.apophisgames.rustyraiding.reinforcedblocks.SqliteReinforcedBlockRepository;
+import com.apophisgames.rustyraiding.zoneauthorizations.CachedZoneAuthorizationRepository;
+import com.apophisgames.rustyraiding.zoneauthorizations.IAuthRepository;
+import com.apophisgames.rustyraiding.zoneauthorizations.SqliteZoneAuthorizationRepository;
+import com.apophisgames.rustyraiding.zones.CachedZoneRepository;
+import com.apophisgames.rustyraiding.zones.IZoneRepository;
+import com.apophisgames.rustyraiding.zones.SqliteZoneRepository;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -46,7 +55,10 @@ public class RustyRaidingPlugin extends JavaPlugin {
         IAuthRepository authSqliteRepo = new SqliteZoneAuthorizationRepository(getDataDirectory());
         IAuthRepository authCachedRepo = new CachedZoneAuthorizationRepository(authSqliteRepo);
 
-        zoneService = new ZoneService(zoneCachedRepo, authCachedRepo);
+        IReinforcedBlockRepository reinforcedBlockSqliteRepo = new SqliteReinforcedBlockRepository(getDataDirectory());
+        IReinforcedBlockRepository reinforcedBlockCachedRepo = new CachedReinforcedBlockRepository(reinforcedBlockSqliteRepo);
+
+        zoneService = new ZoneService(zoneCachedRepo, authCachedRepo, reinforcedBlockCachedRepo);
         zoneService.initialize();
 
         // Register command

@@ -1,8 +1,4 @@
-package com.apophisgames.rustyraiding;
-
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
+package com.apophisgames.rustyraiding.zoneauthorizations;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;

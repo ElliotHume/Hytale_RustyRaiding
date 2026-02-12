@@ -1,13 +1,21 @@
 package com.apophisgames.rustyraiding;
 
+import com.apophisgames.rustyraiding.reinforcedblocks.IReinforcedBlockRepository;
+import com.apophisgames.rustyraiding.reinforcedblocks.ReinforcedBlock;
+import com.apophisgames.rustyraiding.zoneauthorizations.IAuthRepository;
+import com.apophisgames.rustyraiding.zoneauthorizations.ZoneAuthorization;
+import com.apophisgames.rustyraiding.zones.IZoneRepository;
+import com.apophisgames.rustyraiding.zones.Zone;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service for managing SafeZones.
@@ -18,12 +26,14 @@ public class ZoneService {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private final IZoneRepository repository;
+    private final IZoneRepository zoneRepository;
     private final IAuthRepository authRepository;
+    private final IReinforcedBlockRepository reinforcedBlockRepository;
 
-    public ZoneService(@Nonnull IZoneRepository repository, @Nonnull IAuthRepository authRepository) {
-        this.repository = repository;
+    public ZoneService(@Nonnull IZoneRepository zoneRepository, @Nonnull IAuthRepository authRepository, @Nonnull IReinforcedBlockRepository reinforcedBlockRepository) {
+        this.zoneRepository = zoneRepository;
         this.authRepository = authRepository;
+        this.reinforcedBlockRepository = reinforcedBlockRepository;
     }
 
     // ============================================
@@ -48,26 +58,32 @@ public class ZoneService {
 
     public void initialize() {
         try {
-            repository.initialize();
+            zoneRepository.initialize();
         } catch (Exception e) {
-            LOGGER.atSevere().withCause(e).log("Failed to initialize ZoneService");
+            LOGGER.atSevere().withCause(e).log("Failed to initialize zone repository");
         }
 
         try {
             authRepository.initialize();
         } catch (Exception e) {
-            LOGGER.atSevere().withCause(e).log("Failed to initialize ZoneService");
+            LOGGER.atSevere().withCause(e).log("Failed to initialize auth repository");
+        }
+
+        try {
+            reinforcedBlockRepository.initialize();
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed to initialize reinforced block repository");
         }
     }
 
     // ============================================
-    // Query Methods
+    // Zone Query Methods
     // ============================================
 
     @Nullable
     public Zone getZoneByName(String worldName, String zoneName) {
         try {
-            return repository.findByName(worldName, zoneName).orElse(null);
+            return zoneRepository.findByName(worldName, zoneName).orElse(null);
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log("Error finding zone by name");
             return null;
@@ -80,7 +96,7 @@ public class ZoneService {
 
     public List<Zone> getZones(String worldName) {
         try {
-            return repository.findByWorld(worldName);
+            return zoneRepository.findByWorld(worldName);
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log("Error getting zones for world " + worldName);
             return Collections.emptyList();
@@ -132,7 +148,7 @@ public class ZoneService {
     }
 
     // ============================================
-    // Write Methods
+    // Zone Write Methods
     // ============================================
 
     public CreateResult createZone(Zone zone) {
@@ -141,7 +157,7 @@ public class ZoneService {
         }
 
         try {
-            repository.save(zone);
+            zoneRepository.save(zone);
             LOGGER.atInfo().log("Created zone: " + zone.zoneName());
             return CreateResult.SUCCESS;
         } catch (Exception e) {
@@ -164,7 +180,7 @@ public class ZoneService {
         }
 
         try {
-            repository.save(updated);
+            zoneRepository.save(updated);
             LOGGER.atInfo().log("Updated zone: " + zoneName);
             return UpdateResult.SUCCESS;
         } catch (Exception e) {
@@ -180,7 +196,7 @@ public class ZoneService {
         }
 
         try {
-            repository.delete(existing.internalId());
+            zoneRepository.delete(existing.internalId());
             LOGGER.atInfo().log("Deleted zone: " + zoneName);
             return true;
         } catch (Exception e) {
@@ -252,11 +268,114 @@ public class ZoneService {
     }
 
     // ============================================
+    // Reinforced Block Query Methods
+    // ============================================
+
+    public Optional<ReinforcedBlock> getReinforcedBlockAtPosition(String worldName, Vector3i position) {
+        try {
+            return reinforcedBlockRepository.findByPosition(worldName, position);
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Error finding reinforced block by position");
+            return null;
+        }
+    }
+
+    public Map<String, ReinforcedBlock> getReinforcedBlocksInArea(String worldName, Vector3i boundsMin, Vector3i boundsMax) {
+        try {
+            return reinforcedBlockRepository.findInArea(worldName, boundsMin, boundsMax);
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Error finding blocks by area");
+            return null;
+        }
+    }
+
+    public Map<String, ReinforcedBlock> getReinforcedBlockInZone(Zone zone) {
+        try {
+            return reinforcedBlockRepository.findInArea(zone.worldName(), zone.min().toVector3i(), zone.max().toVector3i());
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Error finding blocks in zone '%s'".formatted(zone.zoneName()));
+            return null;
+        }
+    }
+
+    // ============================================
+    // Reinforced Block Write Methods
+    // ============================================
+
+    public CreateResult CreateReinforcedBlock(String worldName, Vector3i position, int reinforcement) {
+        if (getReinforcedBlockAtPosition(worldName, position).isPresent()) {
+            return CreateResult.ALREADY_EXISTS;
+        }
+
+        try {
+            ReinforcedBlock block = ReinforcedBlock.create(worldName, position, reinforcement);
+            LOGGER.atInfo().log("Try Create Reinforced Block"+block.toString());
+            reinforcedBlockRepository.save(block);
+            LOGGER.atInfo().log("Created Reinforced Block in world '%s' at position '%s' with '%s' reinforcement".formatted(worldName, position.toString(), reinforcement));
+            return CreateResult.SUCCESS;
+        } catch (Exception e) {
+            LOGGER.atWarning().log("Failed to create Reinforced Block in world '%s' at position '%s' with '%s' reinforcement: %s".formatted(worldName, position.toString(), reinforcement, e.getMessage()));
+            return CreateResult.ERROR;
+        }
+    }
+
+    public boolean UpdateReinforcement(ReinforcedBlock reinforcedBlock, int newReinforcement){
+        try {
+            reinforcedBlockRepository.save(reinforcedBlock.withNewReinforcement(newReinforcement));
+            LOGGER.atInfo().log("Updated reinforcement of block '%s' to '%s'".formatted(reinforcedBlock.internalId(), newReinforcement));
+            return true;
+        } catch (Exception e) {
+            LOGGER.atInfo().log("Failed to update reinforcement of block '%s' to '%s', current reinforcement: '%s'".formatted(reinforcedBlock.internalId(), newReinforcement, reinforcedBlock.reinforcement()));
+            return false;
+        }
+    }
+
+    public boolean DeleteReinforcedBlock(String worldName, Vector3i position){
+        try {
+            Optional<ReinforcedBlock> reinforcedBlock = reinforcedBlockRepository.findByPosition(worldName, position);
+            if (reinforcedBlock.isPresent()){
+                reinforcedBlockRepository.delete(reinforcedBlock.get().internalId());
+                LOGGER.atInfo().log("Deleted Reinforced Block in world '%s' at position '%s'".formatted(worldName, position.toString()));
+                return true;
+            }
+            LOGGER.atInfo().log("There was no Reinforced Block to delete in world '%s' at position '%s'".formatted(worldName, position.toString()));
+            return false;
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed when trying to delete Reinforced Block in world '%s' at position '%s'".formatted(worldName, position.toString()));
+            return false;
+        }
+    }
+
+    public boolean DeleteReinforcedBlock(ReinforcedBlock reinforcedBlock){
+        try {
+            reinforcedBlockRepository.delete(reinforcedBlock.internalId());
+            LOGGER.atInfo().log("Deleted Reinforced Block '%s'".formatted(reinforcedBlock.internalId()));
+            return true;
+
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed when trying to delete Reinforced Block '%s'".formatted(reinforcedBlock.internalId()));
+            return false;
+        }
+    }
+
+    public boolean DeleteReinforcedBlocksInArea(String worldName, Vector3i boundsMin, Vector3i boundsMax){
+        try {
+            reinforcedBlockRepository.deleteInArea(worldName, boundsMin, boundsMax);
+            LOGGER.atInfo().log("Deleted Reinforced Blocks in world '%s' in area - min:'%s', max:'%s'".formatted(worldName, boundsMin.toString(), boundsMax.toString()));
+            return true;
+        } catch (Exception e) {
+            LOGGER.atSevere().withCause(e).log("Failed when trying to delete Reinforced Blocks in world '%s' area - min:'%s', max:'%s'".formatted(worldName, boundsMin.toString(), boundsMax.toString()));
+            return false;
+        }
+    }
+
+    // ============================================
     // Lifecycle
     // ============================================
 
     public void shutdown() {
-        repository.close();
+        zoneRepository.close();
         authRepository.close();
+        reinforcedBlockRepository.close();
     }
 }

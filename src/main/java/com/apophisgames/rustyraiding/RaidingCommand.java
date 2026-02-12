@@ -1,7 +1,9 @@
 package com.apophisgames.rustyraiding;
 
+import com.apophisgames.rustyraiding.reinforcedblocks.ReinforcedBlock;
 import com.apophisgames.rustyraiding.util.ColorPalette;
 import com.apophisgames.rustyraiding.util.MessageBuilder;
+import com.apophisgames.rustyraiding.zones.Zone;
 import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
 import com.hypixel.hytale.builtin.buildertools.PrototypePlayerBuilderToolSettings;
 import com.hypixel.hytale.component.Ref;
@@ -27,9 +29,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.swing.text.html.Option;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 /**
@@ -65,6 +66,7 @@ public class RaidingCommand extends CommandBase {
         this.addSubCommand(new ClearAuthSubCommand(plugin));
         this.addSubCommand(new GrantPlayerAuthSubCommand(plugin));
         this.addSubCommand(new ListAuthsSubCommand(plugin));
+        this.addSubCommand(new ShowBlocksSubCommand(plugin));
 
         this.requirePermission("raiding.admin");
     }
@@ -530,7 +532,7 @@ public class RaidingCommand extends CommandBase {
             }
 
             double distance = ZoneService.distanceToZone(closest, playerPos);
-            renderZone(world, closest);
+            renderZone(world, closest, DISPLAY_TIME);
             playerRef.sendMessage(MessageBuilder.create("Showing zone '" + closest.zoneName() + "'")
                 .color(ColorPalette.SUCCESS)
                 .append(" (" + (int) distance + " blocks away)", ColorPalette.MUTED)
@@ -573,39 +575,147 @@ public class RaidingCommand extends CommandBase {
                     }
                 }
 
-                renderZone(world, zone);
+                renderZone(world, zone, DISPLAY_TIME);
                 playerRef.sendMessage(MessageBuilder.create("Showing zone '" + zoneName + "'")
                     .color(ColorPalette.SUCCESS)
                     .build());
             }
         }
+    }
+
+    /**
+     * /raiding showblocks <name>
+     * Shows the closest zone (within 100 blocks) or a specific zone by name.
+     */
+    public static class ShowBlocksSubCommand extends AbstractPlayerCommand {
+        private static final int DISTANCE = 100;
+        private static final float DISPLAY_TIME = 15.0f;
+
+        private final RustyRaidingPlugin plugin;
+
+        public ShowBlocksSubCommand(RustyRaidingPlugin plugin) {
+            super("showblocks", "Show reinforced blocks (debug visualization)");
+            this.plugin = plugin;
+
+            // Add variant for showing by name
+            this.addUsageVariant(new ShowBlocksByZoneVariant(plugin));
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+            // Get player position
+            TransformComponent transform = (TransformComponent) store.getComponent(ref, TransformComponent.getComponentType());
+            if (transform == null) {
+                playerRef.sendMessage(MessageBuilder.create("Could not get player position.").color(ColorPalette.ERROR).build());
+                return;
+            }
+            Vector3d playerPos = transform.getPosition();
+
+
+            Vector3d boundsMin = new Vector3d(playerPos.x - DISTANCE, playerPos.y - DISTANCE, playerPos.z - DISTANCE);
+            Vector3d boundsMax = new Vector3d(playerPos.x + DISTANCE, playerPos.y + DISTANCE, playerPos.z + DISTANCE);
+
+            Map<String, ReinforcedBlock> blockMap = plugin.getZoneService().getReinforcedBlocksInArea(world.getName(), boundsMin.toVector3i(), boundsMax.toVector3i());
+
+            if (blockMap.isEmpty()) {
+                playerRef.sendMessage(MessageBuilder.create("No reinforced blocks found within " + DISTANCE + " blocks.")
+                        .color(ColorPalette.ERROR)
+                        .append(" Use /raiding showblocks <name> to show a specific zone.", ColorPalette.MUTED)
+                        .build());
+                return;
+            }
+
+            blockMap.values().forEach((block) -> {
+                renderReinforcedBlock(world, block.position(), DISPLAY_TIME);
+            });
+
+            playerRef.sendMessage(MessageBuilder.create("Showing '%d' reinforced blocks".formatted(blockMap.size()))
+                    .color(ColorPalette.SUCCESS)
+                    .build());
+        }
 
         /**
-         * Render a zone using debug shapes.
+         * Variant: /raiding show <name>
          */
-        private static void renderZone(World world, Zone zone) {
-            // Calculate center and dimensions
-            Vector3d center = new Vector3d(
+        private static class ShowBlocksByZoneVariant extends AbstractPlayerCommand {
+            private final RustyRaidingPlugin plugin;
+            private final RequiredArg<String> nameArg;
+
+            public ShowBlocksByZoneVariant(RustyRaidingPlugin plugin) {
+                super("Show zone by name");
+                this.plugin = plugin;
+                this.nameArg = this.withRequiredArg("name", "Zone name", ArgTypes.STRING);
+            }
+
+            @Override
+            protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+                String zoneName = nameArg.get(context);
+                Zone zone = plugin.getZoneService().getZoneByName(world.getName(), zoneName);
+                if (zone == null) {
+                    playerRef.sendMessage(MessageBuilder.create("Zone '" + zoneName + "' not found in this world.")
+                            .color(ColorPalette.ERROR)
+                            .build());
+                    return;
+                }
+
+                // Get player position
+                TransformComponent transform = (TransformComponent) store.getComponent(ref, TransformComponent.getComponentType());
+                if (transform == null) {
+                    playerRef.sendMessage(MessageBuilder.create("Could not get player position.").color(ColorPalette.ERROR).build());
+                    return;
+                }
+
+                Map<String, ReinforcedBlock> blockMap = plugin.getZoneService().getReinforcedBlocksInArea(world.getName(), zone.min().toVector3i(), zone.max().toVector3i());
+
+                if (blockMap.isEmpty()) {
+                    playerRef.sendMessage(MessageBuilder.create("No reinforced blocks found in zone " + zoneName + ".")
+                            .color(ColorPalette.ERROR)
+                            .append(" Use /raiding showblocks <name> to show a specific zone.", ColorPalette.MUTED)
+                            .build());
+                    return;
+                }
+
+                blockMap.values().forEach((block) -> {
+                    renderReinforcedBlock(world, block.position(), DISPLAY_TIME);
+                });
+
+                playerRef.sendMessage(MessageBuilder.create("Showing '%d' reinforced blocks".formatted(blockMap.size()))
+                        .color(ColorPalette.SUCCESS)
+                        .build());
+            }
+        }
+    }
+
+    /**
+     * Render a cube from bounding points using debug shapes.
+     */
+    private static void renderZone(World world, Zone zone, float displayTime) {
+        // Calculate center and dimensions
+        Vector3d center = new Vector3d(
                 (zone.min().x + zone.max().x) / 2,
                 (zone.min().y + zone.max().y) / 2,
                 (zone.min().z + zone.max().z) / 2
-            );
-            
-            double sizeX = zone.max().x - zone.min().x;
-            double sizeY = zone.max().y - zone.min().y;
-            double sizeZ = zone.max().z - zone.min().z;
+        );
 
-            Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f);
+        double sizeX = zone.max().x - zone.min().x;
+        double sizeY = zone.max().y - zone.min().y;
+        double sizeZ = zone.max().z - zone.min().z;
 
-            // Create transform matrix for the cube
-            Matrix4d matrix = new Matrix4d();
-            matrix.identity();
-            matrix.translate(center);
-            matrix.scale(sizeX, sizeY, sizeZ);
+        Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f);
 
-            // Draw the debug cube
-            DebugUtils.add(world, DebugShape.Cube, matrix, color, DISPLAY_TIME, true);
-        }
+        // Create transform matrix for the cube
+        Matrix4d matrix = new Matrix4d();
+        matrix.identity();
+        matrix.translate(center);
+        matrix.scale(sizeX, sizeY, sizeZ);
+
+        // Draw the debug cube
+        DebugUtils.add(world, DebugShape.Cube, matrix, color, displayTime, true);
+    }
+
+    private static void renderReinforcedBlock(World world, Vector3i targetBlock, float displayTime){
+        Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f); // TODO: lerp colour based on reinforcement
+        DebugUtils.addCube(world, targetBlock.toVector3d().add(0.5, 0.5, 0.5), color, 1.05, displayTime);
     }
 
     private static String formatCenter(Zone zone) {
