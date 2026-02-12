@@ -2,24 +2,26 @@ package com.apophisgames.rustyraiding;
 
 import com.apophisgames.rustyraiding.reinforcedblocks.ReinforcedBlock;
 import com.apophisgames.rustyraiding.zones.Zone;
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
-import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockGathering;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
+import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -161,28 +163,38 @@ public class ZoneBlockProtection {
                     int startingReinforcement = RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount()-1;
                     // Create a reinforced block here if it is the first time a block is being broken without authorization (with -1 reinforcement because of this break).
                     service.CreateReinforcedBlock(world.getName(), target, startingReinforcement);
-                    PlayReinforcedBreakEffects(target, startingReinforcement);
+                    PlayReinforcedBreakEffects(world, target, startingReinforcement);
                 } else {
                     int currentReinforcement = reinforcedBlock.get().reinforcement();
                     if (currentReinforcement > 0){
                         service.UpdateReinforcement(reinforcedBlock.get(), currentReinforcement-1);
-                        PlayReinforcedBreakEffects(target, currentReinforcement-1);
+                        PlayReinforcedBreakEffects(world, target, currentReinforcement-1);
                     } else {
                         service.DeleteReinforcedBlock(reinforcedBlock.get());
                         shouldCancelBreak = false;
                     }
                 }
 
-                if (shouldCancelBreak)
+                if (shouldCancelBreak){
+                    // TODO: Reset block damage??
+                    // Look at BlockHarvestUtils:331
                     event.setCancelled(true);
+                }
             }
-
         }
     }
 
     // TODO: Move to a new package?
-    private static void PlayReinforcedBreakEffects(Vector3i position, int reinforcement){
+    private static void PlayReinforcedBreakEffects(World world, Vector3i blockPosition, int reinforcement){
         // TODO: Play reinforced break effects (particles, sounds)
+        Vector3d position = new Vector3d(blockPosition).add(0.5, 0.5, 0.5);
+        EntityStore store = world.getEntityStore();
+        int index = SoundEvent.getAssetMap().getIndex("SFX_Crystal_Break");
+        float lerpModifier = 1f - ((float) reinforcement / RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount());
+        world.execute(() -> {
+            ParticleUtil.spawnParticleEffect("Block_Hit_Crystal", position, store.getStore());
+            SoundUtil.playSoundEvent3d(index, SoundCategory.SFX, position.x, position.y, position.z, 1.0F, lerpModifier, store.getStore());
+        });
     }
 
     public static class UseBlock extends EntityEventSystem<EntityStore, UseBlockEvent.Pre> {
