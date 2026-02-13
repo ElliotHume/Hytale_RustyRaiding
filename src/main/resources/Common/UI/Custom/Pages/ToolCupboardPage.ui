@@ -49,7 +49,7 @@ Group {
 
     Label #ZoneName {
       Text: "{uuid}";
-      Anchor: (Width: 250);
+      Anchor: (Width: 350);
       Style: (FontSize: 14, TextColor: #ff6b6b, RenderBold: true, VerticalAlignment: Center);
     }
   }

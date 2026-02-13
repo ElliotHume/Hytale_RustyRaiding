@@ -6,6 +6,7 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.SoundCategory;
@@ -18,11 +19,16 @@ import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealth;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthChunk;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthModule;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
+import com.hypixel.hytale.server.core.modules.time.TimeResource;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -133,11 +139,8 @@ public class ZoneBlockProtection {
             ZoneService service = zoneService.get();
             if (service == null) return;
 
-            Player player = chunk.getComponent(index, Player.getComponentType());
-            if (player == null) return;
-
             World world = store.getExternalData().getWorld();
-            
+
             Vector3i target = event.getTargetBlock();
             Vector3d targetPos = new Vector3d(target.x, target.y, target.z);
 
@@ -154,7 +157,11 @@ public class ZoneBlockProtection {
             if (IsAllowedBlockType(blockType))
                 return;
 
-            boolean isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
+            boolean isAuthed = false;
+            Player player = chunk.getComponent(index, Player.getComponentType());
+            if (player != null){
+                isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
+            }
 
             if (!isAuthed){
                 boolean shouldCancelBreak = true;
@@ -176,25 +183,26 @@ public class ZoneBlockProtection {
                 }
 
                 if (shouldCancelBreak){
-                    // TODO: Reset block damage??
-                    // Look at BlockHarvestUtils:331
+                    RepairBlockDamage(world, target, 1.0f);
                     event.setCancelled(true);
                 }
             }
         }
     }
 
-    // TODO: Move to a new package?
+    private static void RepairBlockDamage(World world, Vector3i target, float repairAmount){
+        Ref<ChunkStore> chunkReference = world.getChunkStore().getChunkReference(ChunkUtil.indexChunkFromBlock(target.getX(), target.getZ()));
+        BlockHealthChunk blockHealthComponent = world.getChunkStore().getStore().getComponent(chunkReference, BlockHealthModule.get().getBlockHealthChunkComponentType());
+        blockHealthComponent.repairBlock(world, target, repairAmount);
+    }
+
     private static void PlayReinforcedBreakEffects(World world, Vector3i blockPosition, int reinforcement){
-        // TODO: Play reinforced break effects (particles, sounds)
         Vector3d position = new Vector3d(blockPosition).add(0.5, 0.5, 0.5);
         EntityStore store = world.getEntityStore();
         int index = SoundEvent.getAssetMap().getIndex("SFX_Crystal_Break");
-        float lerpModifier = 1f - ((float) reinforcement / RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount());
-        world.execute(() -> {
-            ParticleUtil.spawnParticleEffect("Block_Hit_Crystal", position, store.getStore());
-            SoundUtil.playSoundEvent3d(index, SoundCategory.SFX, position.x, position.y, position.z, 1.0F, lerpModifier, store.getStore());
-        });
+        float lerpModifier = 1.5f - ((float) reinforcement / RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount());
+        ParticleUtil.spawnParticleEffect("Block_Hit_Crystal", position, store.getStore());
+        SoundUtil.playSoundEvent3d(index, SoundCategory.SFX, position.x, position.y, position.z, 1.0F, lerpModifier, store.getStore());
     }
 
     public static class UseBlock extends EntityEventSystem<EntityStore, UseBlockEvent.Pre> {
@@ -252,9 +260,14 @@ public class ZoneBlockProtection {
         if (blockType == null)
             return false;
 
-        // Raiders are allowed to bypass protections for certain types of blocks, like soils
+        // Raiders are allowed to bypass protections for certain types of blocks
         BlockGathering gathering = blockType.getGathering();
         if (gathering != null){
+            // Soft blocks are allowed
+            if (gathering.isSoft())
+                return true;
+
+            // So are certain block breaking types, like soils
             BlockBreakingDropType breakingDropType = gathering.getBreaking();
             if (breakingDropType != null){
                 String gatherType = breakingDropType.getGatherType();
