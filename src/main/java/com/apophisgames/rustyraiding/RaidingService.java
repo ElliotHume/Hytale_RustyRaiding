@@ -27,7 +27,7 @@ import java.util.Optional;
  * 
  * <p>Business logic layer. Delegates persistence and data access to {@link IZoneRepository}.
  */
-public class ZoneService {
+public class RaidingService {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
@@ -35,7 +35,7 @@ public class ZoneService {
     private final IAuthRepository authRepository;
     private final IReinforcedBlockRepository reinforcedBlockRepository;
 
-    public ZoneService(@Nonnull IZoneRepository zoneRepository, @Nonnull IAuthRepository authRepository, @Nonnull IReinforcedBlockRepository reinforcedBlockRepository) {
+    public RaidingService(@Nonnull IZoneRepository zoneRepository, @Nonnull IAuthRepository authRepository, @Nonnull IReinforcedBlockRepository reinforcedBlockRepository) {
         this.zoneRepository = zoneRepository;
         this.authRepository = authRepository;
         this.reinforcedBlockRepository = reinforcedBlockRepository;

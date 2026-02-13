@@ -2,7 +2,7 @@ package com.apophisgames.rustyraiding.interactions;
 
 import com.apophisgames.rustyraiding.RustyRaidingPlugin;
 import com.apophisgames.rustyraiding.zones.Zone;
-import com.apophisgames.rustyraiding.ZoneService;
+import com.apophisgames.rustyraiding.RaidingService;
 import com.apophisgames.rustyraiding.pages.ToolCupboardPage;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -36,9 +36,9 @@ public class ToolCupboardInteraction extends SimpleBlockInteraction {
         Player player = ref.getStore().getComponent(ref, Player.getComponentType());
         PlayerRef playerRefComponent = store.getComponent(ref, PlayerRef.getComponentType());
 
-        ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
+        RaidingService raidingService = RustyRaidingPlugin.get().getZoneService();
         String zoneIdFromPosition = Zone.getZoneIdFromPosition(world, pos);
-        Zone zone = zoneService.getZoneByName(world.getName(), zoneIdFromPosition);
+        Zone zone = raidingService.getZoneByName(world.getName(), zoneIdFromPosition);
 
         // Create a new zone if one does not exist already
         if (zone == null){
@@ -49,14 +49,14 @@ public class ToolCupboardInteraction extends SimpleBlockInteraction {
             Vector3d maxBounds = new Vector3d(pos.x + zoneWidth, pos.y + zoneHeight, pos.z + zoneWidth);
 
             Zone createZone = Zone.create(zoneIdFromPosition, world.getName(), minBounds, maxBounds);
-            zoneService.createZone(createZone);
-            zoneService.AuthenticatePlayerInZone(createZone.zoneName(), player.getDisplayName());
+            raidingService.createZone(createZone);
+            raidingService.AuthenticatePlayerInZone(createZone.zoneName(), player.getDisplayName());
 
             // Try again to fetch the zone, after creating
-            zone = zoneService.getZoneByName(world.getName(), zoneIdFromPosition);
+            zone = raidingService.getZoneByName(world.getName(), zoneIdFromPosition);
         }
 
-        player.getPageManager().openCustomPage(ref, store, new ToolCupboardPage(playerRefComponent, zoneService, zone));
+        player.getPageManager().openCustomPage(ref, store, new ToolCupboardPage(playerRefComponent, raidingService, zone));
     }
 
     @Override

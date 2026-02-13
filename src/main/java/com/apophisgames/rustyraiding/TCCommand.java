@@ -1,23 +1,15 @@
 package com.apophisgames.rustyraiding;
 
-import com.apophisgames.rustyraiding.reinforcedblocks.ReinforcedBlock;
 import com.apophisgames.rustyraiding.util.ColorPalette;
 import com.apophisgames.rustyraiding.util.MessageBuilder;
 import com.apophisgames.rustyraiding.zones.Zone;
-import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
-import com.hypixel.hytale.builtin.buildertools.PrototypePlayerBuilderToolSettings;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.matrix.Matrix4d;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.DebugShape;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
-import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
-import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -28,10 +20,6 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * Command to manage Tool Cupboards you have authorization over
@@ -116,7 +104,7 @@ public class TCCommand extends CommandBase {
                 return;
             }
 
-            double distance = ZoneService.distanceToZone(closest, playerPos);
+            double distance = RaidingService.distanceToZone(closest, playerPos);
             renderZone(world, closest, DISPLAY_TIME);
             playerRef.sendMessage(MessageBuilder.create("Showing TC zone '" + closest.zoneName() + "'")
                 .color(ColorPalette.SUCCESS)

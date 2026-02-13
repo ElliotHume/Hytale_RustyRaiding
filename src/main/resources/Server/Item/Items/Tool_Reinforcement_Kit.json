@@ -1,0 +1,72 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Tool_Reinforcement_Kit.name",
+    "Description": "server.items.Tool_Reinforcement_Kit.description"
+  },
+  "Icon": "Icons/ItemsGenerated/Tool_Reinforcement_Kit.png",
+  "Categories": [
+    "Items.Tools"
+  ],
+  "PlayerAnimationsId": "Item",
+  "Model": "Resources/Reinforcement_Kit_Crude.blockymodel",
+  "Texture": "Resources/Reinforcement_Kit_Crude_Texture.png",
+  "IconProperties": {
+    "Scale": 0.6,
+    "Rotation": [
+      0,
+      179,
+      0
+    ],
+    "Translation": [
+      0.69,
+      -21
+    ]
+  },
+  "Interactions": {
+    "Secondary": "RustyRaiding_ReinforcementKit_ApplyRoot"
+  },
+  "Quality": "Common",
+  "MaxStack": 1,
+  "DropOnDeath": true,
+  "Tags": {
+    "Type": [
+      "Tool"
+    ]
+  },
+  "InteractionConfig": {
+    "AllEntities": true
+  },
+  "ItemSoundSetId": "ISS_Weapons_Wood",
+  "Recipe": {
+    "TimeSeconds": 12,
+    "Input": [
+      {
+        "ItemId": "Ingredient_Fabric_Scrap_Linen",
+        "Quantity": 10
+      },
+      {
+        "ItemId": "Ingredient_Bar_Iron",
+        "Quantity": 15
+      },
+      {
+        "ItemId": "Ingredient_Leather_Medium",
+        "Quantity": 5
+      }
+    ],
+    "OutputQuantity": 1,
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Categories": [
+          "Workbench_Tools"
+        ],
+        "Id": "Workbench"
+      }
+    ]
+  },
+  "ItemLevel": 1,
+  "MaxDurability": 10,
+  "Utility": {
+    "Compatible": true
+  }
+}

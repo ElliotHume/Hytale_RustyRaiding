@@ -2,7 +2,7 @@ package com.apophisgames.rustyraiding.pages;
 
 import com.apophisgames.rustyraiding.RustyRaidingPlugin;
 import com.apophisgames.rustyraiding.zones.Zone;
-import com.apophisgames.rustyraiding.ZoneService;
+import com.apophisgames.rustyraiding.RaidingService;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -25,14 +25,14 @@ import java.util.*;
 
 public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.ToolCupboardEventData> {
 
-    private final ZoneService zoneService;
+    private final RaidingService raidingService;
     private final Zone zone;
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    public ToolCupboardPage(@Nonnull PlayerRef playerRef, ZoneService zoneService, Zone zone) {
+    public ToolCupboardPage(@Nonnull PlayerRef playerRef, RaidingService raidingService, Zone zone) {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, ToolCupboardEventData.CODEC);
-        this.zoneService = zoneService;
+        this.raidingService = raidingService;
         this.zone = zone;
     }
 
@@ -58,7 +58,7 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
     ) {
         commandBuilder.append("Pages/ToolCupboardPage.ui");
         if (zone != null){
-            List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(zone.zoneName());
+            List<String> authedPlayers = raidingService.getAuthedPlayersByZoneId(zone.zoneName());
             commandBuilder.set("#ZoneName.Text", zone.zoneName());
             commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
             buildPlayerList(commandBuilder, eventBuilder, authedPlayers);
@@ -126,12 +126,12 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
             @Nonnull ToolCupboardEventData data
     ) {
         Player player = (Player) store.getComponent(ref, Player.getComponentType());
-        ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
+        RaidingService raidingService = RustyRaidingPlugin.get().getZoneService();
 
         switch (data.action) {
             case "GrantPlayerAuth":
                 if (zone != null && player != null) {
-                    zoneService.AuthenticatePlayerInZone(zone.zoneName(), player.getDisplayName());
+                    raidingService.AuthenticatePlayerInZone(zone.zoneName(), player.getDisplayName());
                     playerRef.sendMessage(Message.raw("Authenticated player '%s' in zone '%s'".formatted(player.getDisplayName(), zone.zoneName())));
                 }
                 refreshPage(ref, store);
@@ -139,7 +139,7 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
 
             case "ClearAuth":
                 if (zone != null) {
-                    zoneService.ClearZoneAuthentications(zone.zoneName());
+                    raidingService.ClearZoneAuthentications(zone.zoneName());
                     playerRef.sendMessage(Message.raw("Cleared ALL authorizations in zone '%s'".formatted(zone.zoneName())));
                 }
                 refreshPage(ref, store);
@@ -147,7 +147,7 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
 
             case "RemovePlayerAuth":
                 if (zone != null && data.id != null) {
-                    zoneService.RemoveZoneAuthentication(zone.zoneName(), data.id);
+                    raidingService.RemoveZoneAuthentication(zone.zoneName(), data.id);
                     playerRef.sendMessage(Message.raw("Removed authentication for player '%s' in zone '%s'".formatted(data.id, zone.zoneName())));
                 }
                 refreshPage(ref, store);
@@ -170,9 +170,9 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
         UICommandBuilder commandBuilder = new UICommandBuilder();
         UIEventBuilder eventBuilder = new UIEventBuilder();
 
-        ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
+        RaidingService raidingService = RustyRaidingPlugin.get().getZoneService();
         if (zone != null){
-            List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(zone.zoneName());
+            List<String> authedPlayers = raidingService.getAuthedPlayersByZoneId(zone.zoneName());
             commandBuilder.set("#ZoneName.Text", zone.zoneName());
             commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
             buildPlayerList(commandBuilder, eventBuilder, authedPlayers);

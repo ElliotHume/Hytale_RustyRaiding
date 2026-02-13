@@ -19,6 +19,14 @@ public class RaidingConfig {
                     (findConfig, integer, extraInfo) -> findConfig.ReinforceBlockAmount = integer,
                     (findConfig, extraInfo) -> findConfig.ReinforceBlockAmount).add()
 
+            .append(new KeyedCodec<Integer>("ReinforcementToAddWithKit", Codec.INTEGER),
+                    (findConfig, integer, extraInfo) -> findConfig.ReinforcementToAddWithKit = integer,
+                    (findConfig, extraInfo) -> findConfig.ReinforcementToAddWithKit).add()
+
+            .append(new KeyedCodec<Integer>("MaxReinforcementThreshold", Codec.INTEGER),
+                    (findConfig, integer, extraInfo) -> findConfig.MaxReinforcementThreshold = integer,
+                    (findConfig, extraInfo) -> findConfig.MaxReinforcementThreshold).add()
+
             .append(new KeyedCodec<Boolean>("ProtectSoftBlocks", Codec.BOOLEAN),
                     (findConfig, bool, extraInfo) -> findConfig.ProtectSoftBlocks = bool,
                     (findConfig, extraInfo) -> findConfig.ProtectSoftBlocks).add()
@@ -31,8 +39,11 @@ public class RaidingConfig {
     private int Height = 15;
     private int Width = 15;
     private int ReinforceBlockAmount = 50;
+    private int ReinforcementToAddWithKit = 50;
+    private int MaxReinforcementThreshold = 200;
     private boolean ProtectSoftBlocks = false;
     private boolean ProtectBypassTypeBlocks = false;
+
 
 
     public RaidingConfig() {
@@ -48,6 +59,12 @@ public class RaidingConfig {
 
     public int getReinforceBlockAmount() {
         return ReinforceBlockAmount;
+    }
+    public int getReinforcementToAddWithKit() {
+        return ReinforcementToAddWithKit;
+    }
+    public int getMaxReinforcementThreshold() {
+        return MaxReinforcementThreshold;
     }
 
     public boolean getProtectSoftBlocks() {

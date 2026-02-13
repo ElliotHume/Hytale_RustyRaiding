@@ -1,0 +1,21 @@
+{
+  "Settings": {
+    "Adventure": {
+      "Cooldown": {
+        "Id": "BlockInteraction",
+        "Cooldown": 0.233
+      }
+    },
+    "Creative": {
+      "Cooldown": {
+        "Id": "BlockInteraction_Creative",
+        "Cooldown": 0.233,
+        "ClickBypass": true
+      }
+    }
+  },
+  "Interactions": [
+    "RustyRaiding_ReinforcementKit_ApplyInteraction"
+  ],
+  "RequireNewClick": true
+}

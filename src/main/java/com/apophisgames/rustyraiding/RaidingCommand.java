@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import static com.hypixel.hytale.math.util.MathUtil.lerp;
+
 /**
  * Command to manage Raiding Zones.
  * 
@@ -155,7 +157,7 @@ public class RaidingCommand extends CommandBase {
 
             Zone zone = Zone.create(zoneName, world.getName(), bounds.min(), bounds.max());
 
-            ZoneService.CreateResult result = plugin.getZoneService().createZone(zone);
+            RaidingService.CreateResult result = plugin.getZoneService().createZone(zone);
 
             Message message = null;
             switch (result) {
@@ -210,7 +212,7 @@ public class RaidingCommand extends CommandBase {
             Vector3d newMin = bounds.min();
             Vector3d newMax = bounds.max();
 
-            ZoneService.UpdateResult result = plugin.getZoneService().updateZone(
+            RaidingService.UpdateResult result = plugin.getZoneService().updateZone(
                 world.getName(), zoneName, newMin, newMax);
 
             switch (result) {
@@ -258,7 +260,7 @@ public class RaidingCommand extends CommandBase {
                 // Warn if far away
                 TransformComponent transform = (TransformComponent) store.getComponent(ref, TransformComponent.getComponentType());
                 if (transform != null) {
-                    double distance = ZoneService.distanceToZone(zone, transform.getPosition());
+                    double distance = RaidingService.distanceToZone(zone, transform.getPosition());
                     if (distance > 100.0) {
                          playerRef.sendMessage(MessageBuilder.create("Warning: Zone is " + (int) distance + " blocks away. Center: " + formatCenter(zone))
                             .color(ColorPalette.WARNING)
@@ -412,7 +414,7 @@ public class RaidingCommand extends CommandBase {
             String zoneName = zoneNameArg.get(context);
             String playerDisplayName = playerNameArg.get(context);
 
-            ZoneService.CreateResult result = plugin.getZoneService().AuthenticatePlayerInZone(zoneName, playerDisplayName);
+            RaidingService.CreateResult result = plugin.getZoneService().AuthenticatePlayerInZone(zoneName, playerDisplayName);
 
             switch (result) {
                 case SUCCESS -> playerRef.sendMessage(
@@ -534,7 +536,7 @@ public class RaidingCommand extends CommandBase {
                 return;
             }
 
-            double distance = ZoneService.distanceToZone(closest, playerPos);
+            double distance = RaidingService.distanceToZone(closest, playerPos);
             renderZone(world, closest, DISPLAY_TIME);
             playerRef.sendMessage(MessageBuilder.create("Showing zone '" + closest.zoneName() + "'")
                 .color(ColorPalette.SUCCESS)
@@ -570,7 +572,7 @@ public class RaidingCommand extends CommandBase {
                 // Get player position for distance check
                 TransformComponent transform = (TransformComponent) store.getComponent(ref, TransformComponent.getComponentType());
                 if (transform != null) {
-                    double distance = ZoneService.distanceToZone(zone, transform.getPosition());
+                    double distance = RaidingService.distanceToZone(zone, transform.getPosition());
                     if (distance > MAX_AUTO_DISTANCE) {
                         playerRef.sendMessage(MessageBuilder.create("Warning: Zone is " + (int) distance + " blocks away. Center: " + formatCenter(zone))
                             .color(ColorPalette.WARNING)
@@ -628,8 +630,9 @@ public class RaidingCommand extends CommandBase {
                 return;
             }
 
+            int maxReinforcement = RustyRaidingPlugin.CONFIG.get().getMaxReinforcementThreshold();
             blockMap.values().forEach((block) -> {
-                renderReinforcedBlock(world, block.position(), DISPLAY_TIME);
+                renderReinforcedBlock(world, block.position(), DISPLAY_TIME, block.reinforcement(), maxReinforcement);
             });
 
             playerRef.sendMessage(MessageBuilder.create("Showing '%d' reinforced blocks".formatted(blockMap.size()))
@@ -678,8 +681,9 @@ public class RaidingCommand extends CommandBase {
                     return;
                 }
 
+                int maxReinforcement = RustyRaidingPlugin.CONFIG.get().getMaxReinforcementThreshold();
                 blockMap.values().forEach((block) -> {
-                    renderReinforcedBlock(world, block.position(), DISPLAY_TIME);
+                    renderReinforcedBlock(world, block.position(), DISPLAY_TIME, block.reinforcement(), maxReinforcement);
                 });
 
                 playerRef.sendMessage(MessageBuilder.create("Showing '%d' reinforced blocks".formatted(blockMap.size()))
@@ -716,8 +720,9 @@ public class RaidingCommand extends CommandBase {
         DebugUtils.add(world, DebugShape.Cube, matrix, color, displayTime, true);
     }
 
-    private static void renderReinforcedBlock(World world, Vector3i targetBlock, float displayTime){
-        Vector3f color = new Vector3f(0.3f, 1.0f, 0.3f); // TODO: lerp colour based on reinforcement
+    private static void renderReinforcedBlock(World world, Vector3i targetBlock, float displayTime, int reinforcement, int maxReinforcement){
+        float lerpValue = (float) reinforcement / maxReinforcement;
+        Vector3f color = new Vector3f(lerp(0f, 1.0f, lerpValue), lerp(0.5f, 1.0f, lerpValue), lerp(0f, 1.0f, lerpValue)); // TODO: lerp colour based on reinforcement
         DebugUtils.addCube(world, targetBlock.toVector3d().add(0.5, 0.5, 0.5), color, 1.05, displayTime);
     }
 

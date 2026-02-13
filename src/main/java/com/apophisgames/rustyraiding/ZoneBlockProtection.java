@@ -19,12 +19,9 @@ import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealth;
 import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthChunk;
 import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthModule;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
-import com.hypixel.hytale.server.core.modules.time.TimeResource;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -45,7 +42,6 @@ public class ZoneBlockProtection {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     private static final List<String> BYPASS_GATHER_TYPES = List.of("Soils");
-    //private static final String TOOL_CUPBOARD_GATHER_TYPE = "RustyRaiding_ToolCupboard";
 
     private static final Query<EntityStore> QUERY = Query.and(
         Player.getComponentType(),
@@ -53,11 +49,11 @@ public class ZoneBlockProtection {
     );
 
     public static class PlaceBlock extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
-        private final Supplier<ZoneService> zoneService;
+        private final Supplier<RaidingService> raidingService;
 
-        public PlaceBlock(Supplier<ZoneService> zoneService) {
+        public PlaceBlock(Supplier<RaidingService> raidingService) {
             super(PlaceBlockEvent.class);
-            this.zoneService = zoneService;
+            this.raidingService = raidingService;
         }
 
         @Nonnull
@@ -88,7 +84,7 @@ public class ZoneBlockProtection {
                 }
             }
 
-            ZoneService service = zoneService.get();
+            RaidingService service = raidingService.get();
             if (service == null) return;
 
             Player player = chunk.getComponent(index, Player.getComponentType());
@@ -112,11 +108,11 @@ public class ZoneBlockProtection {
     }
 
     public static class BreakBlock extends EntityEventSystem<EntityStore, BreakBlockEvent> {
-        private final Supplier<ZoneService> zoneService;
+        private final Supplier<RaidingService> raidingService;
 
-        public BreakBlock(Supplier<ZoneService> zoneService) {
+        public BreakBlock(Supplier<RaidingService> raidingService) {
             super(BreakBlockEvent.class);
-            this.zoneService = zoneService;
+            this.raidingService = raidingService;
         }
 
         @Nonnull
@@ -136,7 +132,7 @@ public class ZoneBlockProtection {
                            @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, 
                            @Nonnull BreakBlockEvent event) {
 
-            ZoneService service = zoneService.get();
+            RaidingService service = raidingService.get();
             if (service == null) return;
 
             World world = store.getExternalData().getWorld();
@@ -154,8 +150,7 @@ public class ZoneBlockProtection {
                 return;
             }
 
-            if (IsAllowedBlockType(blockType))
-                return;
+
 
             boolean isAuthed = false;
             Player player = chunk.getComponent(index, Player.getComponentType());
@@ -171,6 +166,8 @@ public class ZoneBlockProtection {
             } else {
                 boolean shouldCancelBreak = true;
                 if (reinforcedBlock.isEmpty()){
+                    if (IsAllowedBlockType(blockType))
+                        return;
                     int startingReinforcement = RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount()-1;
                     // Create a reinforced block here if it is the first time a block is being broken without authorization (with -1 reinforcement because of this break).
                     service.CreateReinforcedBlock(world.getName(), target, startingReinforcement);
@@ -210,11 +207,11 @@ public class ZoneBlockProtection {
     }
 
     public static class UseBlock extends EntityEventSystem<EntityStore, UseBlockEvent.Pre> {
-        private final Supplier<ZoneService> zoneService;
+        private final Supplier<RaidingService> raidingService;
 
-        public UseBlock(Supplier<ZoneService> zoneService) {
+        public UseBlock(Supplier<RaidingService> raidingService) {
             super(UseBlockEvent.Pre.class);
-            this.zoneService = zoneService;
+            this.raidingService = raidingService;
         }
 
         @Nonnull
@@ -239,7 +236,7 @@ public class ZoneBlockProtection {
                 return;
             }
 
-            ZoneService service = zoneService.get();
+            RaidingService service = raidingService.get();
             if (service == null) return;
 
             Player player = chunk.getComponent(index, Player.getComponentType());
@@ -260,12 +257,12 @@ public class ZoneBlockProtection {
         }
     }
 
-    private static boolean IsAllowedBlockType(BlockType blockType){
+    public static boolean IsAllowedBlockType(BlockType blockType){
         if (blockType == null)
             return false;
 
-        boolean allowSoftBlocks = RustyRaidingPlugin.CONFIG.get().getProtectSoftBlocks();
-        boolean allowBypassBlocks = RustyRaidingPlugin.CONFIG.get().getProtectBypassTypeBlocks();
+        boolean allowSoftBlocks = !RustyRaidingPlugin.CONFIG.get().getProtectSoftBlocks();
+        boolean allowBypassBlocks = !RustyRaidingPlugin.CONFIG.get().getProtectBypassTypeBlocks();
 
         // Raiders are allowed to bypass protections for certain types of blocks
         BlockGathering gathering = blockType.getGathering();

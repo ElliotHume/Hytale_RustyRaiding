@@ -1,6 +1,7 @@
 package com.apophisgames.rustyraiding;
 
 import com.apophisgames.rustyraiding.config.RaidingConfig;
+import com.apophisgames.rustyraiding.interactions.ReinforcementKitInteraction;
 import com.apophisgames.rustyraiding.interactions.ToolCupboardInteraction;
 import com.apophisgames.rustyraiding.reinforcedblocks.CachedReinforcedBlockRepository;
 import com.apophisgames.rustyraiding.reinforcedblocks.IReinforcedBlockRepository;
@@ -11,19 +12,15 @@ import com.apophisgames.rustyraiding.zoneauthorizations.SqliteZoneAuthorizationR
 import com.apophisgames.rustyraiding.zones.CachedZoneRepository;
 import com.apophisgames.rustyraiding.zones.IZoneRepository;
 import com.apophisgames.rustyraiding.zones.SqliteZoneRepository;
-import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.util.Config;
 
 public class RustyRaidingPlugin extends JavaPlugin {
     
     private static com.apophisgames.rustyraiding.RustyRaidingPlugin instance;
-    private ZoneService zoneService;
-
-    public static ComponentType<ChunkStore, ToolCupboardDataComponent> TOOL_CUPBOARD_COMPONENT;
+    private RaidingService raidingService;
 
     public static Config<RaidingConfig> CONFIG;
 
@@ -37,8 +34,8 @@ public class RustyRaidingPlugin extends JavaPlugin {
         return instance;
     }
 
-    public ZoneService getZoneService() {
-        return zoneService;
+    public RaidingService getZoneService() {
+        return raidingService;
     }
 
     @Override
@@ -58,23 +55,20 @@ public class RustyRaidingPlugin extends JavaPlugin {
         IReinforcedBlockRepository reinforcedBlockSqliteRepo = new SqliteReinforcedBlockRepository(getDataDirectory());
         IReinforcedBlockRepository reinforcedBlockCachedRepo = new CachedReinforcedBlockRepository(reinforcedBlockSqliteRepo);
 
-        zoneService = new ZoneService(zoneCachedRepo, authCachedRepo, reinforcedBlockCachedRepo);
-        zoneService.initialize();
+        raidingService = new RaidingService(zoneCachedRepo, authCachedRepo, reinforcedBlockCachedRepo);
+        raidingService.initialize();
 
         // Register command
         getCommandRegistry().registerCommand(new RaidingCommand(this));
         getCommandRegistry().registerCommand(new TCCommand(this));
         
         // Register ECS system
-        getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.PlaceBlock(() -> zoneService));
-        getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.BreakBlock(() -> zoneService));
-        getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.UseBlock(() -> zoneService));
-
-        //PacketAdapters.registerInbound(new ZoneInteractionPacketHandler(() -> zoneService));
+        getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.PlaceBlock(() -> raidingService));
+        getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.BreakBlock(() -> raidingService));
+        getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.UseBlock(() -> raidingService));
 
         this.getCodecRegistry(Interaction.CODEC).register("RustyRaiding_ToolCupboard_Interaction", ToolCupboardInteraction.class, ToolCupboardInteraction.CODEC);
-
-        // TOOL_CUPBOARD_COMPONENT = this.getChunkStoreRegistry().registerComponent(ToolCupboardDataComponent.class, "RustyRaiding_ToolCupboard_Interaction", ToolCupboardDataComponent.CODEC);
+        this.getCodecRegistry(Interaction.CODEC).register("RustyRaiding_ReinforcementKit_Interaction", ReinforcementKitInteraction.class, ReinforcementKitInteraction.CODEC);
 
         getLogger().atInfo().log("Rusty Raiding setup complete.");
     }
@@ -86,8 +80,8 @@ public class RustyRaidingPlugin extends JavaPlugin {
 
     @Override
     protected void shutdown() {
-        if (zoneService != null) {
-            zoneService.shutdown();
+        if (raidingService != null) {
+            raidingService.shutdown();
         }
     }
 }
