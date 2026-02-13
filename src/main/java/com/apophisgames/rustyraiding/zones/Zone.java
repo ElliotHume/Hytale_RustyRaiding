@@ -1,10 +1,12 @@
 package com.apophisgames.rustyraiding.zones;
 
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -23,6 +25,8 @@ public record Zone(
     @Nonnull Vector3d min,
     @Nonnull Vector3d max
 ) {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     /**
      * Create a new zone with auto-generated internal ID and default safezone flags (all disabled).
@@ -53,5 +57,42 @@ public record Zone(
     public static String getZoneIdFromPosition(World world, Vector3i position){
         String positionString = "%sa%db%dc%d".formatted(world.getName(), position.x, position.y, position.z);
         return UUID.nameUUIDFromBytes(positionString.getBytes()).toString();
+    }
+
+    public boolean checkOverlapWithZone(Zone targetZone) {
+
+        LOGGER.atInfo().log("Checking Overlap between zones '%s' and '%s' ".formatted(zoneName, targetZone.zoneName));
+
+        // Zones can only overlap if they're in the same world
+        if (!worldName.equals(targetZone.worldName())) {
+            LOGGER.atInfo().log("Zones are not in the same world");
+            return false;
+        }
+
+        // Check for overlap in 3D space using the separating axis theorem
+        // Two boxes overlap if they overlap on ALL three axes (X, Y, and Z)
+        boolean xOverlap = min().x <= targetZone.max().x && max().x >= targetZone.min().x;
+        boolean yOverlap = min().y <= targetZone.max().y && max().y >= targetZone.min().y;
+        boolean zOverlap = min().z <= targetZone.max().z && max().z >= targetZone.min().z;
+
+        LOGGER.atInfo().log("Zone overlaps: x=[%s] y=[%s] z=[%s]".formatted(xOverlap, yOverlap, zOverlap));
+
+        return xOverlap && yOverlap && zOverlap;
+    }
+
+    public static List<Vector3d> getZoneCorners(Zone zone) {
+        Vector3d min = zone.min();
+        Vector3d max = zone.max();
+
+        return List.of(
+                new Vector3d(min.x, min.y, min.z),
+                new Vector3d(max.x, min.y, min.z),
+                new Vector3d(min.x, max.y, min.z),
+                new Vector3d(max.x, max.y, min.z),
+                new Vector3d(min.x, min.y, max.z),
+                new Vector3d(max.x, min.y, max.z),
+                new Vector3d(min.x, max.y, max.z),
+                new Vector3d(max.x, max.y, max.z)
+        );
     }
 }

@@ -163,9 +163,13 @@ public class ZoneBlockProtection {
                 isAuthed = service.playerIsAuthed(zone.zoneName(), player.getDisplayName());
             }
 
-            if (!isAuthed){
+            Optional<ReinforcedBlock> reinforcedBlock = service.getReinforcedBlockAtPosition(world.getName(), target);
+            if (isAuthed){
+                if (reinforcedBlock.isPresent()){
+                    service.DeleteReinforcedBlock(reinforcedBlock.get());
+                }
+            } else {
                 boolean shouldCancelBreak = true;
-                Optional<ReinforcedBlock> reinforcedBlock = service.getReinforcedBlockAtPosition(world.getName(), target);
                 if (reinforcedBlock.isEmpty()){
                     int startingReinforcement = RustyRaidingPlugin.CONFIG.get().getReinforceBlockAmount()-1;
                     // Create a reinforced block here if it is the first time a block is being broken without authorization (with -1 reinforcement because of this break).
@@ -260,19 +264,24 @@ public class ZoneBlockProtection {
         if (blockType == null)
             return false;
 
+        boolean allowSoftBlocks = RustyRaidingPlugin.CONFIG.get().getProtectSoftBlocks();
+        boolean allowBypassBlocks = RustyRaidingPlugin.CONFIG.get().getProtectBypassTypeBlocks();
+
         // Raiders are allowed to bypass protections for certain types of blocks
         BlockGathering gathering = blockType.getGathering();
         if (gathering != null){
             // Soft blocks are allowed
-            if (gathering.isSoft())
+            if (allowSoftBlocks && gathering.isSoft())
                 return true;
 
-            // So are certain block breaking types, like soils
-            BlockBreakingDropType breakingDropType = gathering.getBreaking();
-            if (breakingDropType != null){
-                String gatherType = breakingDropType.getGatherType();
-                if(gatherType != null && !gatherType.trim().isEmpty()){
-                    return BYPASS_GATHER_TYPES.contains(gatherType);
+            if (allowBypassBlocks){
+                // So are certain block breaking types, like soils
+                BlockBreakingDropType breakingDropType = gathering.getBreaking();
+                if (breakingDropType != null){
+                    String gatherType = breakingDropType.getGatherType();
+                    if(gatherType != null && !gatherType.trim().isEmpty()){
+                        return BYPASS_GATHER_TYPES.contains(gatherType);
+                    }
                 }
             }
         }

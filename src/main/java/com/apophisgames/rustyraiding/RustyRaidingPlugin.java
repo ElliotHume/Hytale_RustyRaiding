@@ -63,6 +63,7 @@ public class RustyRaidingPlugin extends JavaPlugin {
 
         // Register command
         getCommandRegistry().registerCommand(new RaidingCommand(this));
+        getCommandRegistry().registerCommand(new TCCommand(this));
         
         // Register ECS system
         getEntityStoreRegistry().registerSystem(new ZoneBlockProtection.PlaceBlock(() -> zoneService));

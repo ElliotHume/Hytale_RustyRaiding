@@ -2,6 +2,8 @@ package com.apophisgames.rustyraiding;
 
 import com.apophisgames.rustyraiding.reinforcedblocks.IReinforcedBlockRepository;
 import com.apophisgames.rustyraiding.reinforcedblocks.ReinforcedBlock;
+import com.apophisgames.rustyraiding.util.ColorPalette;
+import com.apophisgames.rustyraiding.util.MessageBuilder;
 import com.apophisgames.rustyraiding.zoneauthorizations.IAuthRepository;
 import com.apophisgames.rustyraiding.zoneauthorizations.ZoneAuthorization;
 import com.apophisgames.rustyraiding.zones.IZoneRepository;
@@ -9,6 +11,9 @@ import com.apophisgames.rustyraiding.zones.Zone;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.NameMatching;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -156,6 +161,12 @@ public class ZoneService {
             return CreateResult.ALREADY_EXISTS;
         }
 
+        boolean overlappingAnotherZone = getZones(zone.worldName()).stream().anyMatch(zone::checkOverlapWithZone);
+        if (overlappingAnotherZone){
+            LOGGER.atSevere().log("Overlapping zone boundaries detected, cannot create zone.");
+            return CreateResult.ERROR;
+        }
+
         try {
             zoneRepository.save(zone);
             LOGGER.atInfo().log("Created zone: " + zone.zoneName());
@@ -177,6 +188,17 @@ public class ZoneService {
         Zone updated = existing;
         if (newMin != null && newMax != null) {
             updated = updated.withBounds(newMin, newMax);
+        }
+
+        Zone closestMaxZone = getClosestZone(updated.worldName(), updated.max(), Integer.max(RustyRaidingPlugin.CONFIG.get().getWidth(), RustyRaidingPlugin.CONFIG.get().getHeight()));
+        Zone closestMinZone = getClosestZone(updated.worldName(), updated.min(), Integer.max(RustyRaidingPlugin.CONFIG.get().getWidth(), RustyRaidingPlugin.CONFIG.get().getHeight()));
+        if (closestMaxZone != null && updated.checkOverlapWithZone(closestMaxZone)){
+            LOGGER.atSevere().log("Overlapping updated boundaries detected, cannot create zone.");
+            return UpdateResult.ERROR;
+        }
+        if (closestMinZone != null && updated.checkOverlapWithZone(closestMinZone)){
+            LOGGER.atSevere().log("Overlapping updated boundaries detected, cannot create zone.");
+            return UpdateResult.ERROR;
         }
 
         try {
@@ -247,6 +269,16 @@ public class ZoneService {
 
     public boolean ClearZoneAuthentications(String zoneId) {
         try {
+            List<String> playerAuths = authRepository.findByZone(zoneId);
+            playerAuths.forEach((playerId) -> {
+                PlayerRef playerRef = Universe.get().getPlayerByUsername(playerId, NameMatching.EXACT);
+                if (playerRef != null){
+                    playerRef.sendMessage(MessageBuilder.create("Your authorization for zone '%s' has been cleared.".formatted(zoneId))
+                            .color(ColorPalette.ERROR)
+                            .build());
+                }
+            });
+
             authRepository.delete(zoneId);
             LOGGER.atInfo().log("Cleared authorizations for zone: " + zoneId);
             return true;
@@ -258,6 +290,13 @@ public class ZoneService {
 
     public boolean RemoveZoneAuthentication(String zoneId, String playerId){
         try {
+            PlayerRef playerRef = Universe.get().getPlayerByUsername(playerId, NameMatching.EXACT);
+            if (playerRef != null){
+                playerRef.sendMessage(MessageBuilder.create("Your authorization for zone '%s' has been revoked.".formatted(zoneId))
+                        .color(ColorPalette.ERROR)
+                        .build());
+            }
+
             authRepository.delete(zoneId, playerId);
             LOGGER.atInfo().log("Removed Authorization for player '%s' in zone '%s'".formatted(playerId, zoneId));
             return true;

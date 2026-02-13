@@ -65,13 +65,6 @@
     "HitboxType": "Tool_Cupboard_BlockBoundingBox",
     "Material": "Solid",
     "ParticleColor": "#5b3222",
-    "Support": {
-      "Down": [
-        {
-          "FaceType": "Full"
-        }
-      ]
-    },
     "VariantRotation": "NESW",
     "Interactions": {
       "Primary": "Break_Container",

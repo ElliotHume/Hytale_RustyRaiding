@@ -48,9 +48,12 @@ public class ToolCupboardInteraction extends SimpleBlockInteraction {
             Vector3d minBounds = new Vector3d(pos.x - zoneWidth, pos.y - zoneHeight, pos.z - zoneWidth);
             Vector3d maxBounds = new Vector3d(pos.x + zoneWidth, pos.y + zoneHeight, pos.z + zoneWidth);
 
-            zone = Zone.create(zoneIdFromPosition, world.getName(), minBounds, maxBounds);
-            zoneService.createZone(zone);
-            zoneService.AuthenticatePlayerInZone(zone.zoneName(), player.getDisplayName());
+            Zone createZone = Zone.create(zoneIdFromPosition, world.getName(), minBounds, maxBounds);
+            zoneService.createZone(createZone);
+            zoneService.AuthenticatePlayerInZone(createZone.zoneName(), player.getDisplayName());
+
+            // Try again to fetch the zone, after creating
+            zone = zoneService.getZoneByName(world.getName(), zoneIdFromPosition);
         }
 
         player.getPageManager().openCustomPage(ref, store, new ToolCupboardPage(playerRefComponent, zoneService, zone));

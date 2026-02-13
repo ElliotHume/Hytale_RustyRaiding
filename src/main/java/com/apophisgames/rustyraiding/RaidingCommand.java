@@ -77,16 +77,19 @@ public class RaidingCommand extends CommandBase {
             context.sendMessage(MessageBuilder.create("This command is only for players.").color(ColorPalette.ERROR).build());
             return;
         }
-        
+
+        // TODO: Update this
         // Show help if no subcommand matched
         context.sendMessage(MessageBuilder.create("Usage:").color(ColorPalette.INFO).build());
-        context.sendMessage(MessageBuilder.create("  /raiding create <name>").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /raiding update <name> - Update bounds from selection").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /raiding flag <name> <flag> <true/false> - Set protection").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /raiding edit <name>").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /raiding delete <name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding create <zone name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding update <zone name> - Update bounds from selection").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding edit <zone name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding delete <zone name>").color(ColorPalette.WHITE).build());
         context.sendMessage(MessageBuilder.create("  /raiding list").color(ColorPalette.WHITE).build());
-        context.sendMessage(MessageBuilder.create("  /raiding show <name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding show <zone name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding grantplayerauth <player name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding clearauth <zone name>").color(ColorPalette.WHITE).build());
+        context.sendMessage(MessageBuilder.create("  /raiding showblocks <zone name>").color(ColorPalette.WHITE).build());
     }
 
     // ============================================
@@ -584,12 +587,12 @@ public class RaidingCommand extends CommandBase {
     }
 
     /**
-     * /raiding showblocks <name>
+     * /raiding showblocks <zone name>
      * Shows the closest zone (within 100 blocks) or a specific zone by name.
      */
     public static class ShowBlocksSubCommand extends AbstractPlayerCommand {
         private static final int DISTANCE = 100;
-        private static final float DISPLAY_TIME = 15.0f;
+        private static final float DISPLAY_TIME = 5.0f;
 
         private final RustyRaidingPlugin plugin;
 
@@ -635,7 +638,7 @@ public class RaidingCommand extends CommandBase {
         }
 
         /**
-         * Variant: /raiding show <name>
+         * Variant: /raiding showblocks <zone name>
          */
         private static class ShowBlocksByZoneVariant extends AbstractPlayerCommand {
             private final RustyRaidingPlugin plugin;

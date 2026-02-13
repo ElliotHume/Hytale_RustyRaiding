@@ -57,15 +57,13 @@ public class ToolCupboardPage extends InteractiveCustomUIPage<ToolCupboardPage.T
             @Nonnull Store<EntityStore> store
     ) {
         commandBuilder.append("Pages/ToolCupboardPage.ui");
-
-        ZoneService zoneService = RustyRaidingPlugin.get().getZoneService();
         if (zone != null){
             List<String> authedPlayers = zoneService.getAuthedPlayersByZoneId(zone.zoneName());
             commandBuilder.set("#ZoneName.Text", zone.zoneName());
             commandBuilder.set("#PlayerCount.Text", "PLAYERS (" + authedPlayers.size() + ")");
             buildPlayerList(commandBuilder, eventBuilder, authedPlayers);
         } else {
-            commandBuilder.set("#ZoneName.Text", "Not Found");
+            commandBuilder.set("#ZoneName.Text", "Not Found -> !!! TC zone is overlapping another !!!");
             commandBuilder.set("#PlayerCount.Text", "PLAYERS (?)");
 
             buildPlayerList(commandBuilder, eventBuilder, new ArrayList<>());
